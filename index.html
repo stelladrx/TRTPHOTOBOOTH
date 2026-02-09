@@ -5,7 +5,7 @@
     <meta name="viewport" content="height=device-height, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>The Red Thread Photobooth</title>
     <style>
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         
         body, html { 
             margin: 0; padding: 0; width: 100%; height: 100%; 
@@ -33,45 +33,46 @@
         }
         video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
 
-        /* STRIP PREVIEW */
+        /* STRIP PREVIEW - Now allows long-press to save */
         .strip-preview-area {
             position: absolute; top: 10%; left: 65%; transform: translateX(-50%);
             width: 40%; height: auto; z-index: 5; background: white; 
             display: flex; flex-direction: column; align-items: center;
             box-shadow: 0 4px 20px rgba(0,0,0,0.15); padding: 12px 0;
+            user-select: all; -webkit-user-select: all;
         }
         
         .preview-photos-container {
             width: 100%; display: flex; flex-direction: column; align-items: center; gap: 6px;
+            pointer-events: auto; /* Ensures images can be interacted with */
         }
 
-        .preview-img { width: 88%; height: auto; aspect-ratio: 1000 / 750; object-fit: cover; z-index: 2; }
-        .preview-trt-logo { position: absolute; top: 40.5%; width: 35%; z-index: 10; }
-        .preview-text-logo { width: 82%; margin-top: 10px; padding-bottom: 5px; }
+        .preview-img { 
+            width: 88%; height: auto; aspect-ratio: 1000 / 750; 
+            object-fit: cover; z-index: 2;
+            display: block;
+        }
+        
+        .preview-trt-logo { position: absolute; top: 40.5%; width: 35%; z-index: 10; pointer-events: none; }
+        .preview-text-logo { width: 82%; margin-top: 10px; padding-bottom: 5px; pointer-events: none; }
 
         /* HIT ZONES */
-        .hitbox { position: absolute; z-index: 30; cursor: pointer; }
+        .hitbox { position: absolute; z-index: 40; cursor: pointer; display: block; }
 
-        #enter-btn { 
-            bottom: 4%; left: 50%; transform: translateX(-50%); 
-            width: 70%; height: 15%; 
-        }
-        #enter-btn:active { transform: translateX(-50%) scale(0.98); }
-
+        #enter-btn { bottom: 4%; left: 50%; transform: translateX(-50%); width: 70%; height: 15%; }
         #start-btn { top: 58%; right: 14%; width: 22%; height: 12%; }
-        
-        /* TAG US BUTTON HITBOX */
-        #ig-btn { 
-            top: 15%; 
-            left: 18%; 
-            transform: translateX(-50%); 
-            width: 25%; 
-            height: 12%; 
-            /* background: rgba(0, 255, 0, 0.2); /* Uncomment for testing visibility */
-        }
-        #ig-btn:active { transform: translateX(-50%) scale(0.95); }
-
         #dl-btn { bottom: 12%; left: 50%; transform: translateX(-50%); width: 80%; height: 7%; }
+
+        /* TAG US FIX: Real link element instead of just a div */
+        .tag-us-link {
+            position: absolute;
+            top: 15%; left: 18%; transform: translateX(-50%);
+            width: 30%; height: 12%;
+            z-index: 100;
+            display: block;
+            /* background: rgba(0,255,0,0.2); /* Toggle for testing */
+        }
+
         #retake-btn { 
             bottom: 6.5%; left: 50%; transform: translateX(-50%); 
             width: 50%; height: 4%; 
@@ -105,12 +106,15 @@
 
         <div id="screen-3" class="screen">
             <img src="strip screen.png" class="bg-layer">
+            
+            <a href="https://instagram.com/theredthread.app" target="_blank" class="tag-us-link"></a>
+
             <div class="strip-preview-area">
                 <div class="preview-photos-container" id="photo-list"></div>
                 <img src="TRT LOGO.png" class="preview-trt-logo">
                 <img src="text logo.png" class="preview-text-logo">
             </div>
-            <div id="ig-btn" class="hitbox" onclick="window.open('https://instagram.com/theredthread.app', '_blank')"></div>
+            
             <div id="dl-btn" class="hitbox" onclick="createFinalDownload()"></div>
             <div id="retake-btn" class="hitbox" onclick="location.reload()">RETAKE PHOTOS</div>
         </div>
@@ -125,12 +129,11 @@
 
         async function startCamera() {
             try {
-                const constraints = { video: { facingMode: 'user' } };
-                const stream = await navigator.mediaDevices.getUserMedia(constraints);
+                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
                 video.srcObject = stream;
                 document.getElementById('screen-1').classList.remove('active');
                 document.getElementById('screen-2').classList.add('active');
-            } catch (err) { alert("Camera access required."); }
+            } catch (err) { alert("Please allow camera access."); }
         }
 
         async function takeFourPhotos() {
@@ -175,7 +178,9 @@
         function showResults() {
             document.getElementById('screen-2').classList.remove('active');
             document.getElementById('screen-3').classList.add('active');
-            document.getElementById('photo-list').innerHTML = capturedPhotos.map(p => `<img src="${p}" class="preview-img">`).join('');
+            document.getElementById('photo-list').innerHTML = capturedPhotos.map(p => 
+                `<img src="${p}" class="preview-img" alt="Photobooth Image">`
+            ).join('');
         }
 
         function createFinalDownload() {
