@@ -33,7 +33,7 @@
         }
         video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
 
-        /* STRIP PREVIEW */
+        /* STRIP PREVIEW - Pushed Right to make room for IG button on Left */
         .strip-preview-area {
             position: absolute; 
             top: 10%; 
@@ -70,28 +70,17 @@
 
         /* HIT ZONES */
         .hitbox { position: absolute; z-index: 20; cursor: pointer; }
-        
-        /* Adjusted Start/Enter Hitboxes */
-        #enter-btn { bottom: 10%; left: 50%; transform: translateX(-50%); width: 60%; height: 10%; }
+        #enter-btn { bottom: 6%; left: 50%; transform: translateX(-50%); width: 60%; height: 10%; }
         #start-btn { top: 58%; right: 14%; width: 22%; height: 12%; }
         
-        /* RESULT SCREEN BUTTONS - MOVED HIGHER */
+        /* Tag Us Button - Positioned to the LEFT of the strip */
         #ig-btn { top: 35%; left: 22%; transform: translateX(-50%); width: 25%; height: 10%; }
         
-        #dl-btn { 
-            bottom: 20%; /* Raised significantly */
-            left: 50%; 
-            transform: translateX(-50%); 
-            width: 80%; 
-            height: 7%; 
-        }
+        #dl-btn { bottom: 12%; left: 50%; transform: translateX(-50%); width: 80%; height: 7%; }
         
         #retake-btn { 
-            bottom: 14%; /* Raised significantly */
-            left: 50%; 
-            transform: translateX(-50%); 
-            width: 50%; 
-            height: 4%; 
+            bottom: 6%; left: 50%; transform: translateX(-50%); 
+            width: 50%; height: 4%; 
             display: flex; justify-content: center; align-items: center;
             font-family: sans-serif; font-weight: bold; font-size: 11px; color: #b31d1d;
             text-decoration: underline;
@@ -230,6 +219,7 @@
                 ctx.drawImage(trtLogo, (canvas.width/2)-(trtSize/2), 1500, trtSize, trtSize);
 
                 const txtW = 950; const txtH = 200;
+                // Logo sits explicitly 50px below the end of the 4th photo
                 const textLogoY = 3350; 
                 ctx.drawImage(textLogo, (canvas.width/2)-(txtW/2), textLogoY, txtW, txtH);
 
