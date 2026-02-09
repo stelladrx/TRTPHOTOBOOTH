@@ -50,22 +50,27 @@
         .preview-text-logo { width: 82%; margin-top: 10px; padding-bottom: 5px; }
 
         /* HIT ZONES */
-        .hitbox { position: absolute; z-index: 20; cursor: pointer; }
+        .hitbox { position: absolute; z-index: 30; cursor: pointer; }
 
-        /* OPTIMIZED ENTER BUTTON: Made taller and wider for easier tapping */
         #enter-btn { 
-            bottom: 4%; 
-            left: 50%; 
-            transform: translateX(-50%); 
-            width: 70%; 
-            height: 15%; 
-            /* background: rgba(255,0,0,0.1); /* Uncomment for testing hit area */
+            bottom: 4%; left: 50%; transform: translateX(-50%); 
+            width: 70%; height: 15%; 
         }
-        
         #enter-btn:active { transform: translateX(-50%) scale(0.98); }
 
         #start-btn { top: 58%; right: 14%; width: 22%; height: 12%; }
-        #ig-btn { top: 15%; left: 18%; transform: translateX(-50%); width: 25%; height: 10%; }
+        
+        /* TAG US BUTTON HITBOX */
+        #ig-btn { 
+            top: 15%; 
+            left: 18%; 
+            transform: translateX(-50%); 
+            width: 25%; 
+            height: 12%; 
+            /* background: rgba(0, 255, 0, 0.2); /* Uncomment for testing visibility */
+        }
+        #ig-btn:active { transform: translateX(-50%) scale(0.95); }
+
         #dl-btn { bottom: 12%; left: 50%; transform: translateX(-50%); width: 80%; height: 7%; }
         #retake-btn { 
             bottom: 6.5%; left: 50%; transform: translateX(-50%); 
@@ -105,7 +110,7 @@
                 <img src="TRT LOGO.png" class="preview-trt-logo">
                 <img src="text logo.png" class="preview-text-logo">
             </div>
-            <div id="ig-btn" class="hitbox" onclick="window.location.href='https://instagram.com/theredthread.app'"></div>
+            <div id="ig-btn" class="hitbox" onclick="window.open('https://instagram.com/theredthread.app', '_blank')"></div>
             <div id="dl-btn" class="hitbox" onclick="createFinalDownload()"></div>
             <div id="retake-btn" class="hitbox" onclick="location.reload()">RETAKE PHOTOS</div>
         </div>
@@ -120,24 +125,12 @@
 
         async function startCamera() {
             try {
-                // Constraints optimization for faster load
-                const constraints = { 
-                    video: { 
-                        facingMode: 'user',
-                        width: { ideal: 1280 },
-                        height: { ideal: 720 }
-                    } 
-                };
+                const constraints = { video: { facingMode: 'user' } };
                 const stream = await navigator.mediaDevices.getUserMedia(constraints);
                 video.srcObject = stream;
-                
-                // Immediate transition
                 document.getElementById('screen-1').classList.remove('active');
                 document.getElementById('screen-2').classList.add('active');
-            } catch (err) { 
-                console.error(err);
-                alert("Please check camera permissions in your browser settings."); 
-            }
+            } catch (err) { alert("Camera access required."); }
         }
 
         async function takeFourPhotos() {
