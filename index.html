@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="height=device-height, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>The Red Thread Photobooth</title>
     <style>
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -10,8 +10,7 @@
         body, html { 
             margin: 0; padding: 0; width: 100%; height: 100%; 
             background-color: #f2e1e1; overflow: hidden;
-            display: flex; justify-content: center; align-items: center;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            font-family: sans-serif;
         }
 
         .app-container { 
@@ -19,12 +18,40 @@
             height: 100dvh; 
             aspect-ratio: 9 / 19.5; 
             background-color: #f2e1e1; 
+            margin: 0 auto;
             overflow: hidden;
         }
 
-        .screen { display: none; position: absolute; inset: 0; }
+        .screen { display: none; position: absolute; inset: 0; z-index: 10; }
         .active { display: block !important; }
         .bg-layer { position: absolute; width: 100%; height: 100%; object-fit: contain; z-index: 1; }
+
+        /* THE FIX: Absolute Floating Instagram Link */
+        #ig-link {
+            position: absolute;
+            top: 15%; 
+            left: 10%; 
+            width: 30%; 
+            height: 12%;
+            z-index: 9999 !important; /* Forces it above EVERYTHING */
+            display: none; /* Only shows on screen 3 */
+            cursor: pointer;
+            background: rgba(0,0,0,0); /* Invisible but solid hit area */
+        }
+
+        /* STRIP PREVIEW - Single Merged Image */
+        .strip-preview-area {
+            position: absolute; top: 10%; left: 65%; transform: translateX(-50%);
+            width: 42%; height: auto; z-index: 20;
+        }
+        
+        #merged-preview-img {
+            width: 100%; height: auto;
+            display: block;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+            pointer-events: auto !important;
+            -webkit-touch-callout: default !important;
+        }
 
         /* CAMERA VIEWPORT */
         .camera-viewport {
@@ -34,43 +61,15 @@
         }
         video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
 
-        /* STRIP PREVIEW - The Merged Image Container */
-        .strip-preview-area {
-            position: absolute; top: 10%; left: 65%; transform: translateX(-50%);
-            width: 40%; height: auto; z-index: 20;
-        }
-        
-        #merged-preview-img {
-            width: 100%; height: auto;
-            display: block;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
-            pointer-events: auto !important; /* Forces phone to allow long-press */
-            -webkit-touch-callout: default !important; /* Specifically for iOS save menu */
-        }
-
-        /* TAG US LINK - Native Anchor placed at the highest possible Z-index */
-        #ig-link {
-            position: absolute;
-            top: 15%; left: 5%; /* Adjusted for better hit area */
-            width: 35%; height: 15%;
-            z-index: 9999; /* Higher than everything else */
-            display: block;
-            cursor: pointer;
-            background: rgba(0,0,0,0); /* Invisible but clickable */
-        }
-
         /* HIT ZONES */
         .hitbox { position: absolute; z-index: 40; cursor: pointer; }
         #enter-btn { bottom: 4%; left: 50%; transform: translateX(-50%); width: 70%; height: 15%; }
         #start-btn { top: 58%; right: 14%; width: 22%; height: 12%; }
         #dl-btn { bottom: 12%; left: 50%; transform: translateX(-50%); width: 80%; height: 7%; }
-
         #retake-btn { 
             bottom: 6.5%; left: 50%; transform: translateX(-50%); 
-            width: 50%; height: 4%; 
-            display: flex; justify-content: center; align-items: center;
-            font-weight: bold; font-size: 11px; color: #b31d1d;
-            text-decoration: underline; z-index: 50;
+            width: 50%; height: 4%; display: flex; justify-content: center; align-items: center;
+            font-weight: bold; font-size: 11px; color: #b31d1d; text-decoration: underline;
         }
 
         #timer { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 5rem; color: white; font-weight: bold; z-index: 100; }
@@ -78,6 +77,8 @@
     </style>
 </head>
 <body>
+
+    <a href="https://www.instagram.com/theredthread.app/" target="_blank" id="ig-link"></a>
 
     <div id="flash" class="flash"></div>
 
@@ -98,13 +99,9 @@
 
         <div id="screen-3" class="screen">
             <img src="strip screen.png" class="bg-layer">
-            
-            <a href="https://www.instagram.com/theredthread.app/" target="_blank" id="ig-link"></a>
-
             <div class="strip-preview-area">
-                <img id="merged-preview-img" src="" alt="Long press to save full strip">
+                <img id="merged-preview-img" src="" alt="Long press to save strip">
             </div>
-            
             <div id="dl-btn" class="hitbox" onclick="downloadStrip()"></div>
             <div id="retake-btn" class="hitbox" onclick="location.reload()">RETAKE PHOTOS</div>
         </div>
@@ -115,6 +112,7 @@
     <script>
         const video = document.getElementById('video');
         const timer = document.getElementById('timer');
+        const igLink = document.getElementById('ig-link');
         let capturedPhotos = [];
 
         async function startCamera() {
@@ -177,39 +175,41 @@
             trtLogo.src = 'TRT LOGO.png';
             textLogo.src = 'text logo.png';
 
-            let loadedCount = 0;
-            const checkAllLoaded = () => {
-                loadedCount++;
-                if (loadedCount === 6) build(); // 4 photos + 2 logos
+            let loaded = 0;
+            const checkLoaded = () => {
+                loaded++;
+                if (loaded === 6) { // 4 photos + 2 logos
+                    drawFinal();
+                }
             };
-
-            trtLogo.onload = checkAllLoaded;
-            textLogo.onload = checkAllLoaded;
 
             const imgs = capturedPhotos.map(src => {
                 const img = new Image();
-                img.onload = checkAllLoaded;
+                img.onload = checkLoaded;
                 img.src = src;
                 return img;
             });
+            trtLogo.onload = checkLoaded;
+            textLogo.onload = checkLoaded;
 
-            function build() {
+            function drawFinal() {
                 const photoW = 1056; const photoH = 792; 
                 const x = (canvas.width - photoW) / 2;
                 imgs.forEach((img, i) => {
                     const y = 80 + (i * 825); 
                     ctx.drawImage(img, x, y, photoW, photoH);
                 });
-                const trtSize = 360;
-                ctx.drawImage(trtLogo, (canvas.width/2)-(trtSize/2), 1500, trtSize, trtSize);
-                const txtW = 980; const txtH = 200;
-                ctx.drawImage(textLogo, (canvas.width/2)-(txtW/2), 3400, txtW, txtH);
+                ctx.drawImage(trtLogo, (canvas.width/2)-180, 1500, 360, 360);
+                ctx.drawImage(textLogo, (canvas.width/2)-490, 3400, 980, 200);
 
-                // This puts the finished strip into the preview img tag
-                document.getElementById('merged-preview-img').src = canvas.toDataURL('image/jpeg', 0.95);
+                // Convert to single image for the preview
+                const finalStripUrl = canvas.toDataURL('image/jpeg', 0.95);
+                document.getElementById('merged-preview-img').src = finalStripUrl;
                 
+                // Show Screen 3 and Show the IG Link
                 document.getElementById('screen-2').classList.remove('active');
                 document.getElementById('screen-3').classList.add('active');
+                igLink.style.display = 'block'; 
             }
         }
 
@@ -219,12 +219,6 @@
             link.href = document.getElementById('merged-preview-img').src;
             link.click();
         }
-
-        // Native iOS/Android Link Handler
-        document.getElementById('ig-link').addEventListener('click', function(e) {
-            // If standard anchor fails, this backup JS trigger kicks in
-            window.location.href = 'https://www.instagram.com/theredthread.app/';
-        });
     </script>
 </body>
 </html>
