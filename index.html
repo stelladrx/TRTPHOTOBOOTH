@@ -15,7 +15,7 @@
             overflow: hidden;
         }
 
-        /* Fixed Background and Layout */
+        /* Essential: This keeps your backgrounds visible and centered */
         .screen { 
             display: none; 
             position: relative;
@@ -29,52 +29,53 @@
         
         .active { display: flex; flex-direction: column; align-items: center; }
 
-        /* Assigning Background Images */
+        /* Background Assets */
         #screen-start { background-image: url('open scren.png'); }
         #screen-capture { background-image: url('photo screen.jpg'); }
         #screen-result { background-image: url('strip screen.jpg'); }
 
-        /* PHOTO RATIO FIX: L 654,5307px X H 913,1924px */
+        /* CAMERA RATIO FIX: L 654,5307px X H 913,1924px */
         .camera-container {
             position: absolute;
-            top: 13.8%; 
+            top: 13.5%; /* Adjusted to sit inside the red frame */
             width: 654.53px; 
             height: 913.19px;
-            /* Scaling for different screens while maintaining the exact ratio */
-            max-width: 53.5%; 
-            max-height: 35.8%;
             overflow: hidden;
             background: #000;
             z-index: 5;
+            /* Ensures it stays proportionate on smaller screens */
+            transform-origin: top center;
+            zoom: 0.45; /* Adjust this zoom value if the camera looks too big/small on your screen */
         }
 
         video {
             width: 100%; height: 100%;
-            object-fit: cover;
+            object-fit: cover; /* Forces the video to fill the 654x913 area */
             transform: scaleX(-1);
         }
 
         #timer {
             position: absolute; top: 50%; left: 50%;
             transform: translate(-50%, -50%);
-            font-size: 8rem; color: white; font-weight: bold;
+            font-size: 15rem; color: white; font-weight: bold;
             z-index: 10;
+            pointer-events: none;
         }
 
-        /* Results Display */
+        /* Strip Result Slots */
         .results-overlay {
             position: absolute;
-            top: 4.5%;
-            width: 31%; 
-            height: 61.5%;
+            top: 5%;
+            width: 320px; 
+            height: 1100px;
             display: flex; flex-direction: column;
             justify-content: space-between;
-            padding: 12px 0;
-            box-sizing: border-box;
+            padding: 15px 0;
             z-index: 5;
+            zoom: 0.5;
         }
 
-        .photo-slot { width: 100%; height: 23%; overflow: hidden; }
+        .photo-slot { width: 100%; height: 23.5%; overflow: hidden; }
         .photo-slot img { width: 100%; height: 100%; object-fit: cover; }
 
         /* BUTTONS (HIT ZONES) */
@@ -82,21 +83,28 @@
             position: absolute;
             cursor: pointer;
             z-index: 100;
-            background: rgba(255, 0, 0, 0); 
+            background: rgba(255, 0, 0, 0); /* Invisible */
         }
 
-        #enter-btn { bottom: 6%; width: 35%; height: 12%; }
+        /* ENTER Button on Start Screen */
+        #enter-btn { 
+            bottom: 5%; 
+            width: 250px; 
+            height: 100px; 
+        }
 
-        /* RED ROUND START BUTTON FIX */
+        /* RED ROUND START BUTTON: Positioned over your drawing */
         #start-round-btn {
-            top: 61%; 
-            left: 65.5%;
-            width: 80px; height: 80px;
+            bottom: 22%; 
+            right: 18%;
+            width: 120px; 
+            height: 120px;
             border-radius: 50%;
         }
 
-        #instagram-hit { bottom: 20%; left: 10%; width: 15%; height: 10%; }
-        #download-hit { bottom: 8%; width: 60%; height: 10%; }
+        /* Result Screen Buttons */
+        #instagram-hit { bottom: 20%; left: 12%; width: 80px; height: 80px; }
+        #download-hit { bottom: 7%; width: 300px; height: 80px; }
 
         .flash { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 2000; display: none; }
     </style>
@@ -126,7 +134,7 @@
         </div>
         <div id="instagram-hit" class="hit-zone" onclick="window.open('http://www.instagram.com/theredthread.app')"></div>
         <div id="download-hit" class="hit-zone" onclick="exportStrip()"></div>
-        <button style="position:absolute; top: 2%; right: 2%; z-index: 1000;" onclick="location.reload()">RETRY</button>
+        <button style="position:absolute; top: 20px; right: 20px; z-index: 1000;" onclick="location.reload()">RETRY</button>
     </div>
 
     <canvas id="hidden-canvas" style="display:none;"></canvas>
@@ -139,12 +147,14 @@
 
         async function initCamera() {
             try {
-                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { facingMode: 'user', width: 1280, height: 720 } 
+                });
                 video.srcObject = stream;
                 document.getElementById('screen-start').classList.remove('active');
                 document.getElementById('screen-capture').classList.add('active');
             } catch (err) {
-                alert("Camera Access Error: Ensure you are using HTTPS and have allowed permissions.");
+                alert("Camera Error: Please use HTTPS and allow camera access.");
             }
         }
 
@@ -180,8 +190,9 @@
         function snap(index) {
             const canvas = document.getElementById('hidden-canvas');
             const ctx = canvas.getContext('2d');
-            // Using your exact dimensions for the canvas capture
-            canvas.width = 654.53; canvas.height = 913.19;
+            // Logic to capture at your exact required dimensions
+            canvas.width = 654.53; 
+            canvas.height = 913.19;
             ctx.translate(canvas.width, 0); ctx.scale(-1, 1);
             
             const scale = Math.max(canvas.width / video.videoWidth, canvas.height / video.videoHeight);
