@@ -30,16 +30,17 @@
         }
         video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
 
-        /* PREVIEW STRIP (Matches your preview screenshot) */
+        /* PREVIEW STRIP AREA */
         .strip-preview-area {
             position: absolute; top: 4.5%; left: 50%; transform: translateX(-50%);
             width: 33.5%; height: 75%; z-index: 5;
             display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
             padding-top: 10px;
+            background: white; /* Matches the strip look */
         }
         .preview-img { 
-            width: 86%; height: 17.6%; margin-bottom: 5.4%; 
-            object-fit: cover; background: #fff; border: 1px solid #ddd;
+            width: 90%; height: 17.5%; margin-bottom: 5%; 
+            object-fit: cover; background: #eee;
         }
 
         /* BUTTON HIT ZONES */
@@ -92,14 +93,10 @@
         let capturedPhotos = [];
 
         async function startCamera() {
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ 
-                    video: { facingMode: 'user', aspectRatio: 3/4 } 
-                });
-                video.srcObject = stream;
-                document.getElementById('screen-1').classList.remove('active');
-                document.getElementById('screen-2').classList.add('active');
-            } catch(e) { alert("Camera error. Please ensure you are on HTTPS."); }
+            const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
+            video.srcObject = stream;
+            document.getElementById('screen-1').classList.remove('active');
+            document.getElementById('screen-2').classList.add('active');
         }
 
         async function takeFourPhotos() {
@@ -127,12 +124,16 @@
             setTimeout(() => document.getElementById('flash').style.display = 'none', 100);
             
             const c = document.createElement('canvas');
-            c.width = 800; c.height = 1000; // High res vertical crop
+            c.width = 800; c.height = 800; // Square crop for the strip slots
             const ctx = c.getContext('2d');
             ctx.translate(800, 0); ctx.scale(-1, 1);
             
-            // Manual Crop logic to match preview
-            ctx.drawImage(video, 0, 0, 800, 1000);
+            // This logic ensures the "center-crop" look
+            const minDim = Math.min(video.videoWidth, video.videoHeight);
+            const sx = (video.videoWidth - minDim) / 2;
+            const sy = (video.videoHeight - minDim) / 2;
+            
+            ctx.drawImage(video, sx, sy, minDim, minDim, 0, 0, 800, 800);
             capturedPhotos.push(c.toDataURL('image/jpeg', 0.9));
         }
 
@@ -147,51 +148,47 @@
             const canvas = document.getElementById('hidden-canvas');
             const ctx = canvas.getContext('2d');
             
-            // Define Strip Dimensions (Standard 2:6 ratio photostrip)
-            canvas.width = 1200;
-            canvas.height = 3600;
+            // Final high-res strip dimensions (1:3 ratio)
+            canvas.width = 1000;
+            canvas.height = 3000;
 
-            // Background White
+            // 1. Draw the white background rectangle
             ctx.fillStyle = "#ffffff";
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
             const trtLogo = new Image(); trtLogo.src = 'TRT LOGO.png';
             const textLogo = new Image(); textLogo.src = 'text logo.png';
 
-            let loadedPhotos = 0;
-            const photoImgs = capturedPhotos.map((src, idx) => {
+            let loadedCount = 0;
+            const photoImgs = capturedPhotos.map(src => {
                 const img = new Image();
                 img.src = src;
                 img.onload = () => {
-                    loadedPhotos++;
-                    if (loadedPhotos === 4) {
-                        assembleStrip();
-                    }
+                    loadedCount++;
+                    if (loadedCount === 4) assemble();
                 };
                 return img;
             });
 
-            function assembleStrip() {
-                // 1. Draw Photos
+            function assemble() {
+                // 2. Draw Photos centered with padding
+                const photoSize = 850;
+                const x = (canvas.width - photoSize) / 2;
+                
                 photoImgs.forEach((img, i) => {
-                    const photoW = 1000;
-                    const photoH = 700;
-                    const x = 100;
-                    const y = 100 + (i * 800);
-                    ctx.drawImage(img, x, y, photoW, photoH);
+                    const y = 80 + (i * 680); // Calculated vertical spacing
+                    ctx.drawImage(img, x, y, photoSize, 600); // Cropped height to match frame slots
                 });
 
-                // 2. Draw TRT LOGO (Centred over photos)
-                const trtW = 250;
-                const trtH = 250;
-                ctx.drawImage(trtLogo, (canvas.width/2) - (trtW/2), 1650, trtW, trtH);
+                // 3. Place TRT LOGO.png over the center (between photos 2 and 3)
+                const trtW = 220; const trtH = 220;
+                ctx.drawImage(trtLogo, (canvas.width/2) - (trtW/2), 1350, trtW, trtH);
 
-                // 3. Draw text logo (At bottom)
-                const txtW = 800;
-                const txtH = 200;
-                ctx.drawImage(textLogo, (canvas.width/2) - (txtW/2), 3300, txtW, txtH);
+                // 4. Place text logo.png at the bottom
+                const txtW = 700; const txtH = 150;
+                ctx.drawImage(textLogo, (canvas.width/2) - (txtW/2), 2750, txtW, txtH);
 
-                // 4. Download
+                // 5. Trigger Download
                 const link = document.createElement('a');
                 link.download = 'RedThread_Booth_Strip.jpg';
                 link.href = canvas.toDataURL('image/jpeg', 0.95);
