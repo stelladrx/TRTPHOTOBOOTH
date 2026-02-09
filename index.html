@@ -33,26 +33,26 @@
         }
         video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
 
-        /* STRIP PREVIEW */
+        /* STRIP PREVIEW - Increased width to 40% */
         .strip-preview-area {
             position: absolute; 
             top: 10%; 
-            left: 62%; 
+            left: 65%; /* Adjusted for larger width */
             transform: translateX(-50%);
-            width: 32%; 
+            width: 40%; 
             height: auto;
             z-index: 5;
             background: white; 
             display: flex; 
             flex-direction: column; 
             align-items: center;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-            padding: 8px 0;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            padding: 12px 0;
         }
         
         .preview-photos-container {
             width: 100%; display: flex; flex-direction: column; align-items: center;
-            gap: 4px;
+            gap: 6px;
         }
 
         .preview-img { 
@@ -61,11 +61,14 @@
         }
 
         .preview-trt-logo { 
-            position: absolute; top: 40.5%; width: 35%; z-index: 10; 
+            position: absolute; 
+            top: 40.5%; /* Stays centered between photo 2 and 3 */
+            width: 35%; 
+            z-index: 10; 
         }
 
         .preview-text-logo { 
-            width: 82%; margin-top: 6px; padding-bottom: 5px; 
+            width: 82%; margin-top: 10px; padding-bottom: 5px; 
         }
 
         /* HIT ZONES */
@@ -73,12 +76,12 @@
         #enter-btn { bottom: 6%; left: 50%; transform: translateX(-50%); width: 60%; height: 10%; }
         #start-btn { top: 58%; right: 14%; width: 22%; height: 12%; }
         
-        /* TAG US - Higher and on the left of the strip */
-        #ig-btn { top: 15%; left: 22%; transform: translateX(-50%); width: 25%; height: 10%; }
+        /* TAG US - Higher and aligned with the larger strip */
+        #ig-btn { top: 15%; left: 18%; transform: translateX(-50%); width: 25%; height: 10%; }
         
         #dl-btn { bottom: 12%; left: 50%; transform: translateX(-50%); width: 80%; height: 7%; }
         #retake-btn { 
-            bottom: 7%; left: 50%; transform: translateX(-50%); 
+            bottom: 6.5%; left: 50%; transform: translateX(-50%); 
             width: 50%; height: 4%; 
             display: flex; justify-content: center; align-items: center;
             font-family: sans-serif; font-weight: bold; font-size: 11px; color: #b31d1d;
@@ -189,7 +192,6 @@
             const canvas = document.getElementById('hidden-canvas');
             const ctx = canvas.getContext('2d');
             
-            // Fixed high-res dimensions
             canvas.width = 1200;
             canvas.height = 3600; 
 
@@ -207,26 +209,24 @@
             });
 
             function build() {
-                const photoW = 1056; // 88% width
-                const photoH = 792;  // 1000/750 ratio
+                const photoW = 1056; 
+                const photoH = 792; 
                 const x = (canvas.width - photoW) / 2;
                 
                 imgs.forEach((img, i) => {
-                    // Added 15px gap between photos so white rectangle shows
                     const y = 80 + (i * 807); 
                     ctx.drawImage(img, x, y, photoW, photoH);
                 });
 
                 const trtSize = 360;
-                // Positioned specifically over the gap between photo 2 and 3
                 ctx.drawImage(trtLogo, (canvas.width/2)-(trtSize/2), 1475, trtSize, trtSize);
 
                 const txtW = 980; const txtH = 200;
-                // Placed explicitly below the 4th photo (which ends at ~3300)
-                ctx.drawImage(textLogo, (canvas.width/2)-(txtW/2), 3330, txtW, txtH);
+                const textLogoY = 3330; 
+                ctx.drawImage(textLogo, (canvas.width/2)-(txtW/2), textLogoY, txtW, txtH);
 
                 const link = document.createElement('a');
-                link.download = 'RedThread_Strip.jpg';
+                link.download = 'TheRedThread_Strip.jpg';
                 link.href = canvas.toDataURL('image/jpeg', 1.0);
                 link.click();
             }
