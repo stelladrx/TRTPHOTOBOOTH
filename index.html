@@ -29,47 +29,47 @@
         
         .active { display: flex; }
 
-        /* Background Design Layouts */
+        /* DESIGNATED BACKGROUNDS */
         #screen-start { background-image: url('open scren.png'); }
         #screen-capture { background-image: url('photo screen.png'); }
         #screen-result { background-image: url('strip screen.png'); }
 
-        /* Live camera fit for "photo screen.png" red frame */
+        /* LIVE VIEW: Adjusted to match your "like this" reference */
         .camera-container {
             position: absolute;
-            top: 14.8%; /* Aligned to the red rectangle in the asset */
-            width: 58.5%; 
-            height: 37.5%;
+            top: 15.3%; /* Aligned to the inner red frame */
+            width: 53.5%; /* Corrected Ratio to fit the box precisely */
+            height: 34.5%;
             overflow: hidden;
-            background: #000;
             z-index: 5;
+            background: #000;
         }
 
         video {
             height: 100%; width: 100%;
             object-fit: cover;
-            transform: scaleX(-1);
-            filter: contrast(1.1) brightness(1.05);
+            transform: scaleX(-1); /* Mirror */
+            filter: contrast(1.1) brightness(1.1) saturate(1.05); /* Beauty effect */
         }
 
         #timer {
             position: absolute; top: 50%; left: 50%;
             transform: translate(-50%, -50%);
-            font-size: 6rem; color: white; font-weight: bold;
+            font-size: 8rem; color: white; font-weight: bold;
             text-shadow: 0 0 20px var(--booth-red);
             z-index: 10;
         }
 
-        /* Result strip slots for "strip screen.png" */
+        /* STRIP RESULTS: Adjusted for the strip screen asset */
         .results-overlay {
             position: absolute;
-            top: 5%;
-            width: 30%; 
-            height: 61%;
+            top: 5.5%;
+            width: 28%; 
+            height: 59.5%;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
-            padding: 10px 0;
+            padding: 8px 0;
             box-sizing: border-box;
             z-index: 5;
         }
@@ -77,37 +77,34 @@
         .photo-slot { width: 100%; height: 23%; overflow: hidden; }
         .photo-slot img { width: 100%; height: 100%; object-fit: cover; }
 
-        /* --- FUNCTIONAL BUTTONS (HIT ZONES) --- */
+        /* --- THE BUTTONS --- */
         .hit-zone {
             position: absolute;
             cursor: pointer;
             z-index: 100;
-            background: rgba(255, 0, 0, 0); /* Keep at 0 to be invisible */
+            background: rgba(255, 0, 0, 0); /* Set to 0.2 to debug position */
         }
 
-        /* THE ENTER BUTTON - Positioned over the ENTER asset on the start screen */
+        /* The Enter Button on "open screen.png" */
         #enter-btn {
-            bottom: 6%;
+            bottom: 7%;
             left: 50%;
             transform: translateX(-50%);
-            width: 35%;
-            height: 10%;
+            width: 32%;
+            height: 9%;
         }
 
-        /* THE START BUTTON - Positioned over the red circle on the capture screen */
+        /* THE RED ROUND BUTTON: Mapped to start button.png position */
         #start-round-btn {
-            top: 64.5%;
-            left: 67%;
-            width: 70px;
-            height: 70px;
+            top: 61.5%;
+            left: 65.5%;
+            width: 75px;
+            height: 75px;
             border-radius: 50%;
         }
 
-        /* TAG US / INSTAGRAM */
-        #instagram-hit { bottom: 20%; left: 12%; width: 18%; height: 10%; }
-
-        /* DOWNLOAD */
-        #download-hit { bottom: 7%; width: 60%; height: 10%; }
+        #instagram-hit { bottom: 20%; left: 14%; width: 13%; height: 8%; }
+        #download-hit { bottom: 8%; width: 52%; height: 8%; }
 
         .flash { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 2000; display: none; }
     </style>
@@ -135,11 +132,9 @@
             <div id="p3" class="photo-slot"></div>
             <div id="p4" class="photo-slot"></div>
         </div>
-        
         <div id="instagram-hit" class="hit-zone" onclick="window.open('http://www.instagram.com/theredthread.app')"></div>
         <div id="download-hit" class="hit-zone" onclick="exportStrip()"></div>
-        
-        <button style="position:absolute; top: 2%; right: 2%; cursor:pointer; z-index: 1000;" onclick="location.reload()">RETRY</button>
+        <button style="position:absolute; top: 3%; right: 3%; cursor:pointer;" onclick="location.reload()">RETRY</button>
     </div>
 
     <canvas id="hidden-canvas" style="display:none;"></canvas>
@@ -148,37 +143,24 @@
         const video = document.getElementById('video');
         const timer = document.getElementById('timer');
         const flash = document.getElementById('flash');
-        let snaps = [];
+        let capturedSnaps = [];
 
-        // FIX: Enter Button Camera Initialization
         async function initCamera() {
             try {
-                // Constraints to handle mobile and desktop
-                const constraints = { 
-                    video: { 
-                        facingMode: 'user',
-                        width: { ideal: 1280 },
-                        height: { ideal: 720 }
-                    } 
-                };
-                const stream = await navigator.mediaDevices.getUserMedia(constraints);
+                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
                 video.srcObject = stream;
-                
-                // Switch Screens
                 document.getElementById('screen-start').classList.remove('active');
                 document.getElementById('screen-capture').classList.add('active');
-            } catch (err) {
-                alert("Camera error: " + err.message + "\nEnsure you are using HTTPS and granted permission.");
-            }
+            } catch (err) { alert("Camera Permission Required"); }
         }
 
         async function runSession() {
             document.getElementById('start-round-btn').style.pointerEvents = 'none';
-            snaps = [];
+            capturedSnaps = [];
             for (let i = 1; i <= 4; i++) {
                 await countdown(3);
                 triggerFlash();
-                capture(i);
+                takeSnap(i);
             }
             document.getElementById('screen-capture').classList.remove('active');
             document.getElementById('screen-result').classList.add('active');
@@ -186,12 +168,12 @@
 
         function countdown(s) {
             return new Promise(res => {
-                let count = s;
-                timer.innerText = count;
+                let t = s;
+                timer.innerText = t;
                 const clock = setInterval(() => {
-                    count--;
-                    if (count <= 0) { clearInterval(clock); timer.innerText = ""; res(); }
-                    else { timer.innerText = count; }
+                    t--;
+                    if (t <= 0) { clearInterval(clock); timer.innerText = ""; res(); }
+                    else { timer.innerText = t; }
                 }, 1000);
             });
         }
@@ -201,17 +183,14 @@
             setTimeout(() => flash.style.display = 'none', 100);
         }
 
-        function capture(index) {
+        function takeSnap(index) {
             const canvas = document.getElementById('hidden-canvas');
             const ctx = canvas.getContext('2d');
             canvas.width = 600; canvas.height = 800;
             ctx.translate(canvas.width, 0); ctx.scale(-1, 1);
-            
-            // Draw video frame to canvas
             ctx.drawImage(video, 0, 0, 600, 800);
-            
             const data = canvas.toDataURL('image/png');
-            snaps.push(data);
+            capturedSnaps.push(data);
             document.getElementById('p' + index).innerHTML = `<img src="${data}">`;
             ctx.setTransform(1, 0, 0, 1, 0, 0);
         }
@@ -219,25 +198,22 @@
         async function exportStrip() {
             const exp = document.createElement('canvas');
             const ctx = exp.getContext('2d');
-            exp.width = 600; exp.height = 1800;
-            
+            exp.width = 600; exp.height = 1800; // Final vertical strip ratio
             const frame = new Image();
             frame.src = 'photo strip frame.png';
 
             for (let i = 0; i < 4; i++) {
                 const img = new Image();
-                img.src = snaps[i];
+                img.src = capturedSnaps[i];
                 await img.decode();
-                ctx.drawImage(img, 70, 95 + (i * 420), 460, 335);
+                // Spacing adjusted for the frame template
+                ctx.drawImage(img, 72, 98 + (i * 418), 455, 332);
             }
 
-            try {
-                await frame.decode();
-                ctx.drawImage(frame, 0, 0, 600, 1800);
-            } catch(e) {}
-            
+            await frame.decode();
+            ctx.drawImage(frame, 0, 0, 600, 1800);
             const link = document.createElement('a');
-            link.download = 'red-thread-strip.png';
+            link.download = 'TheRedThreadStrip.png';
             link.href = exp.toDataURL();
             link.click();
         }
