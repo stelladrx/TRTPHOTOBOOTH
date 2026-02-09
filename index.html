@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>The Red Thread Photobooth</title>
     <style>
-        * { box-sizing: border-box; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body, html { 
             margin: 0; padding: 0; width: 100%; height: 100%; 
             background-color: #f2e1e1; overflow: hidden;
@@ -23,31 +23,31 @@
         .active { display: block !important; }
         .bg-layer { position: absolute; width: 100%; height: 100%; object-fit: contain; z-index: 1; }
 
-        /* CAMERA SCREEN VIEWPORT */
+        /* CAMERA VIEWPORT */
         .camera-viewport {
-            position: absolute; top: 11.5%; left: 50%; transform: translateX(-50%);
-            width: 63%; height: 38%; overflow: hidden; background: #000; z-index: 5;
+            position: absolute; top: 12.5%; left: 50%; transform: translateX(-50%);
+            width: 66%; height: 38.5%; overflow: hidden; background: #000; z-index: 5;
         }
         video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
 
-        /* STRIP SCREEN PREVIEW */
+        /* PREVIEW STRIP (Matches your preview screenshot) */
         .strip-preview-area {
-            position: absolute; top: 5%; left: 50%; transform: translateX(-50%);
-            width: 32%; height: 74.5%; z-index: 5;
-            display: flex; flex-direction: column; align-items: center;
-            padding-top: 2%;
+            position: absolute; top: 4.5%; left: 50%; transform: translateX(-50%);
+            width: 33.5%; height: 75%; z-index: 5;
+            display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
+            padding-top: 10px;
         }
         .preview-img { 
-            width: 88%; height: 17.6%; margin-bottom: 5.5%; 
-            object-fit: cover; background: #fff; 
+            width: 86%; height: 17.6%; margin-bottom: 5.4%; 
+            object-fit: cover; background: #fff; border: 1px solid #ddd;
         }
 
         /* BUTTON HIT ZONES */
-        .hitbox { position: absolute; z-index: 20; cursor: pointer; background: rgba(0,0,0,0); }
+        .hitbox { position: absolute; z-index: 20; cursor: pointer; }
         #enter-btn { bottom: 5%; left: 50%; transform: translateX(-50%); width: 60%; height: 10%; }
-        #start-btn { top: 58%; right: 15%; width: 22%; height: 12%; border-radius: 50%; }
-        #ig-btn { bottom: 22%; left: 10%; width: 25%; height: 10%; }
-        #dl-btn { bottom: 6%; left: 50%; transform: translateX(-50%); width: 80%; height: 8%; }
+        #start-btn { top: 58%; right: 15%; width: 25%; height: 15%; }
+        #ig-btn { bottom: 21%; left: 9%; width: 22%; height: 10%; }
+        #dl-btn { bottom: 6%; left: 50%; transform: translateX(-50%); width: 75%; height: 10%; }
 
         #timer { 
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); 
@@ -79,8 +79,8 @@
         <div id="screen-3" class="screen">
             <img src="strip screen.png" class="bg-layer">
             <div class="strip-preview-area" id="preview-area"></div>
-            <div id="ig-btn" class="hitbox" onclick="window.location.href='https://www.instagram.com/theredthread.app/'"></div>
-            <div id="dl-btn" class="hitbox" onclick="generateMergedStrip()"></div>
+            <div id="ig-btn" class="hitbox" onclick="window.location.href='https://instagram.com/theredthread.app'"></div>
+            <div id="dl-btn" class="hitbox" onclick="createManualStrip()"></div>
         </div>
     </div>
 
@@ -92,12 +92,14 @@
         let capturedPhotos = [];
 
         async function startCamera() {
-            const stream = await navigator.mediaDevices.getUserMedia({ 
-                video: { facingMode: 'user', aspectRatio: 3/4 } 
-            });
-            video.srcObject = stream;
-            document.getElementById('screen-1').classList.remove('active');
-            document.getElementById('screen-2').classList.add('active');
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { facingMode: 'user', aspectRatio: 3/4 } 
+                });
+                video.srcObject = stream;
+                document.getElementById('screen-1').classList.remove('active');
+                document.getElementById('screen-2').classList.add('active');
+            } catch(e) { alert("Camera error. Please ensure you are on HTTPS."); }
         }
 
         async function takeFourPhotos() {
@@ -111,8 +113,7 @@
 
         function doCountdown(sec) {
             return new Promise(res => {
-                let count = sec;
-                timer.innerText = count;
+                let count = sec; timer.innerText = count;
                 const interval = setInterval(() => {
                     count--;
                     if (count <= 0) { clearInterval(interval); timer.innerText = ""; res(); }
@@ -126,10 +127,12 @@
             setTimeout(() => document.getElementById('flash').style.display = 'none', 100);
             
             const c = document.createElement('canvas');
-            c.width = 600; c.height = 800;
+            c.width = 800; c.height = 1000; // High res vertical crop
             const ctx = c.getContext('2d');
-            ctx.translate(600, 0); ctx.scale(-1, 1);
-            ctx.drawImage(video, 0, 0, 600, 800);
+            ctx.translate(800, 0); ctx.scale(-1, 1);
+            
+            // Manual Crop logic to match preview
+            ctx.drawImage(video, 0, 0, 800, 1000);
             capturedPhotos.push(c.toDataURL('image/jpeg', 0.9));
         }
 
@@ -140,49 +143,60 @@
             area.innerHTML = capturedPhotos.map(p => `<img src="${p}" class="preview-img">`).join('');
         }
 
-        function generateMergedStrip() {
+        function createManualStrip() {
             const canvas = document.getElementById('hidden-canvas');
             const ctx = canvas.getContext('2d');
-            const frame = new Image();
-            frame.src = 'photo strip frame.png';
+            
+            // Define Strip Dimensions (Standard 2:6 ratio photostrip)
+            canvas.width = 1200;
+            canvas.height = 3600;
 
-            frame.onload = () => {
-                canvas.width = frame.width;
-                canvas.height = frame.height;
+            // Background White
+            ctx.fillStyle = "#ffffff";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-                let imagesLoaded = 0;
-                const imgs = capturedPhotos.map((src, i) => {
-                    const img = new Image();
-                    img.src = src;
-                    img.onload = () => {
-                        imagesLoaded++;
-                        if (imagesLoaded === 4) {
-                            // DRAW PHOTOS BEHIND
-                            imgs.forEach((pImg, idx) => {
-                                // EXACT ALIGNMENT MATH:
-                                // Photo Width: 88% of frame
-                                // Vertical spacing: idx * (19.5% of total height)
-                                const w = canvas.width * 0.88;
-                                const h = canvas.height * 0.176;
-                                const x = (canvas.width - w) / 2;
-                                const y = (canvas.height * 0.048) + (idx * (canvas.height * 0.198));
-                                
-                                ctx.drawImage(pImg, x, y, w, h);
-                            });
+            const trtLogo = new Image(); trtLogo.src = 'TRT LOGO.png';
+            const textLogo = new Image(); textLogo.src = 'text logo.png';
 
-                            // DRAW FRAME ON TOP
-                            ctx.drawImage(frame, 0, 0);
+            let loadedPhotos = 0;
+            const photoImgs = capturedPhotos.map((src, idx) => {
+                const img = new Image();
+                img.src = src;
+                img.onload = () => {
+                    loadedPhotos++;
+                    if (loadedPhotos === 4) {
+                        assembleStrip();
+                    }
+                };
+                return img;
+            });
 
-                            // DOWNLOAD RESULT
-                            const link = document.createElement('a');
-                            link.download = 'RedThread_Strip.jpg';
-                            link.href = canvas.toDataURL('image/jpeg', 0.95);
-                            link.click();
-                        }
-                    };
-                    return img;
+            function assembleStrip() {
+                // 1. Draw Photos
+                photoImgs.forEach((img, i) => {
+                    const photoW = 1000;
+                    const photoH = 700;
+                    const x = 100;
+                    const y = 100 + (i * 800);
+                    ctx.drawImage(img, x, y, photoW, photoH);
                 });
-            };
+
+                // 2. Draw TRT LOGO (Centred over photos)
+                const trtW = 250;
+                const trtH = 250;
+                ctx.drawImage(trtLogo, (canvas.width/2) - (trtW/2), 1650, trtW, trtH);
+
+                // 3. Draw text logo (At bottom)
+                const txtW = 800;
+                const txtH = 200;
+                ctx.drawImage(textLogo, (canvas.width/2) - (txtW/2), 3300, txtW, txtH);
+
+                // 4. Download
+                const link = document.createElement('a');
+                link.download = 'RedThread_Booth_Strip.jpg';
+                link.href = canvas.toDataURL('image/jpeg', 0.95);
+                link.click();
+            }
         }
     </script>
 </body>
