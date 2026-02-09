@@ -11,6 +11,7 @@
             margin: 0; padding: 0; width: 100%; height: 100%; 
             background-color: #f2e1e1; overflow: hidden;
             display: flex; justify-content: center; align-items: center;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         }
 
         .app-container { 
@@ -33,28 +34,29 @@
         }
         video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
 
-        /* STRIP PREVIEW - Displays the merged single image */
+        /* STRIP PREVIEW - The Merged Image Container */
         .strip-preview-area {
             position: absolute; top: 10%; left: 65%; transform: translateX(-50%);
-            width: 40%; height: auto; z-index: 10;
-            user-select: all; -webkit-user-select: all;
+            width: 40%; height: auto; z-index: 20;
         }
         
         #merged-preview-img {
             width: 100%; height: auto;
             display: block;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
-            pointer-events: auto; /* Crucial for long-press */
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+            pointer-events: auto !important; /* Forces phone to allow long-press */
+            -webkit-touch-callout: default !important; /* Specifically for iOS save menu */
         }
 
-        /* TAG US LINK - Native Anchor */
-        .tag-us-link {
+        /* TAG US LINK - Native Anchor placed at the highest possible Z-index */
+        #ig-link {
             position: absolute;
-            top: 15%; left: 18%; transform: translateX(-50%);
-            width: 30%; height: 12%;
-            z-index: 100;
+            top: 15%; left: 5%; /* Adjusted for better hit area */
+            width: 35%; height: 15%;
+            z-index: 9999; /* Higher than everything else */
             display: block;
-            background: transparent;
+            cursor: pointer;
+            background: rgba(0,0,0,0); /* Invisible but clickable */
         }
 
         /* HIT ZONES */
@@ -67,8 +69,8 @@
             bottom: 6.5%; left: 50%; transform: translateX(-50%); 
             width: 50%; height: 4%; 
             display: flex; justify-content: center; align-items: center;
-            font-family: sans-serif; font-weight: bold; font-size: 11px; color: #b31d1d;
-            text-decoration: underline;
+            font-weight: bold; font-size: 11px; color: #b31d1d;
+            text-decoration: underline; z-index: 50;
         }
 
         #timer { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 5rem; color: white; font-weight: bold; z-index: 100; }
@@ -97,10 +99,10 @@
         <div id="screen-3" class="screen">
             <img src="strip screen.png" class="bg-layer">
             
-            <a href="https://instagram.com/theredthread.app" target="_blank" class="tag-us-link" id="ig-link"></a>
+            <a href="https://www.instagram.com/theredthread.app/" target="_blank" id="ig-link"></a>
 
             <div class="strip-preview-area">
-                <img id="merged-preview-img" src="" alt="Long press to save strip">
+                <img id="merged-preview-img" src="" alt="Long press to save full strip">
             </div>
             
             <div id="dl-btn" class="hitbox" onclick="downloadStrip()"></div>
@@ -163,7 +165,6 @@
             capturedPhotos.push(c.toDataURL('image/jpeg', 0.9));
         }
 
-        // Create the single image for long-press saving
         function generateMergedPreview() {
             const canvas = document.getElementById('hidden-canvas');
             const ctx = canvas.getContext('2d');
@@ -171,21 +172,24 @@
             ctx.fillStyle = "#ffffff";
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            const trtLogo = new Image(); trtLogo.src = 'TRT LOGO.png';
-            const textLogo = new Image(); textLogo.src = 'text logo.png';
+            const trtLogo = new Image(); 
+            const textLogo = new Image();
+            trtLogo.src = 'TRT LOGO.png';
+            textLogo.src = 'text logo.png';
 
-            let loaded = 0;
+            let loadedCount = 0;
+            const checkAllLoaded = () => {
+                loadedCount++;
+                if (loadedCount === 6) build(); // 4 photos + 2 logos
+            };
+
+            trtLogo.onload = checkAllLoaded;
+            textLogo.onload = checkAllLoaded;
+
             const imgs = capturedPhotos.map(src => {
-                const img = new Image(); img.src = src;
-                img.onload = () => { 
-                    loaded++; 
-                    if(loaded === 4) {
-                        // Wait for logos to load too
-                        trtLogo.onload = textLogo.onload = () => build();
-                        // If they are already cached:
-                        if(trtLogo.complete && textLogo.complete) build();
-                    } 
-                };
+                const img = new Image();
+                img.onload = checkAllLoaded;
+                img.src = src;
                 return img;
             });
 
@@ -201,26 +205,25 @@
                 const txtW = 980; const txtH = 200;
                 ctx.drawImage(textLogo, (canvas.width/2)-(txtW/2), 3400, txtW, txtH);
 
-                // Set the single merged image as the preview source
-                const finalData = canvas.toDataURL('image/jpeg', 0.95);
-                document.getElementById('merged-preview-img').src = finalData;
-
+                // This puts the finished strip into the preview img tag
+                document.getElementById('merged-preview-img').src = canvas.toDataURL('image/jpeg', 0.95);
+                
                 document.getElementById('screen-2').classList.remove('active');
                 document.getElementById('screen-3').classList.add('active');
             }
         }
 
         function downloadStrip() {
-            const dataUrl = document.getElementById('merged-preview-img').src;
             const link = document.createElement('a');
             link.download = 'TheRedThread_Strip.jpg';
-            link.href = dataUrl;
+            link.href = document.getElementById('merged-preview-img').src;
             link.click();
         }
 
-        // Force Link Sensitivity for Mobile
-        document.getElementById('ig-link').addEventListener('touchstart', function() {
-            window.open('https://instagram.com/theredthread.app', '_blank');
+        // Native iOS/Android Link Handler
+        document.getElementById('ig-link').addEventListener('click', function(e) {
+            // If standard anchor fails, this backup JS trigger kicks in
+            window.location.href = 'https://www.instagram.com/theredthread.app/';
         });
     </script>
 </body>
