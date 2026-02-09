@@ -25,48 +25,47 @@
         .active { display: block !important; }
         .bg-layer { position: absolute; width: 100%; height: 100%; object-fit: contain; z-index: 1; }
 
-        /* CAMERA VIEWPORT - Scaled down for better fit */
+        /* CAMERA VIEWPORT - Lowered and reduced to clear top assets */
         .camera-viewport {
-            position: absolute; top: 14%; left: 50%; transform: translateX(-50%);
-            width: 62%; height: 35.5%; overflow: hidden; background: #000; z-index: 5;
+            position: absolute; 
+            top: 16%; /* Lowered further to avoid red assets */
+            left: 50%; 
+            transform: translateX(-50%);
+            width: 62%; height: 35%; 
+            overflow: hidden; background: #000; z-index: 5;
             border-radius: 4px;
         }
         video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
 
-        /* STRIP PREVIEW - Lowered and Shortened */
+        /* STRIP PREVIEW - Locked Proportions */
         .strip-preview-area {
             position: absolute; 
-            top: 7.5%; /* Lowered to clear the top header */
+            top: 10%; /* Lowered to clear top red thing */
             left: 50%; 
             transform: translateX(-50%);
             width: 31%; 
-            height: 70%; /* Shortened white rectangle */
+            height: auto; /* Height now determined by content */
+            max-height: 70%;
             z-index: 5;
             background: white; 
             display: flex; 
             flex-direction: column; 
             align-items: center;
             box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-            padding: 8px 0;
+            padding: 10px 0;
         }
         
         .preview-photos-container {
-            width: 100%; 
-            display: flex; 
-            flex-direction: column; 
-            align-items: center;
-            gap: 4px; /* Tight spacing between photos */
+            width: 100%; display: flex; flex-direction: column; align-items: center;
+            gap: 5px;
         }
 
         .preview-img { 
-            width: 88%; 
-            height: auto; 
-            aspect-ratio: 1000 / 750; /* Hard-coded ratio to prevent stretch */
-            object-fit: cover; 
-            background: #eee;
+            width: 88%; height: auto; aspect-ratio: 1000 / 750;
+            object-fit: cover; z-index: 2;
         }
 
-        /* TRT Logo - Perfectly straddles photo 2 and 3 */
+        /* TRT Logo positioned perfectly between photo 2 and 3 */
         .preview-trt-logo { 
             position: absolute; 
             top: 40.5%; 
@@ -75,9 +74,9 @@
         }
 
         .preview-text-logo { 
-            width: 85%; 
-            margin-top: auto; 
-            padding-bottom: 10px; 
+            width: 82%; 
+            margin-top: 8px; /* Tight fit to remove empty space */
+            padding-bottom: 5px; 
         }
 
         /* HIT ZONES */
@@ -86,7 +85,6 @@
         #start-btn { top: 58%; right: 14%; width: 22%; height: 12%; }
         #ig-btn { bottom: 22%; left: 9%; width: 25%; height: 8%; }
         #dl-btn { bottom: 8.5%; left: 50%; transform: translateX(-50%); width: 80%; height: 7%; }
-        
         #retake-btn { 
             bottom: 2%; left: 50%; transform: translateX(-50%); 
             width: 50%; height: 5%; 
@@ -142,13 +140,11 @@
 
         async function startCamera() {
             try {
-                const stream = await navigator.mediaDevices.getUserMedia({ 
-                    video: { facingMode: 'user', aspectRatio: 1.333 } 
-                });
+                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
                 video.srcObject = stream;
                 document.getElementById('screen-1').classList.remove('active');
                 document.getElementById('screen-2').classList.add('active');
-            } catch (err) { alert("Please allow camera access."); }
+            } catch (err) { alert("Camera access required."); }
         }
 
         async function takeFourPhotos() {
@@ -174,19 +170,17 @@
         function snap() {
             document.getElementById('flash').style.display = 'block';
             setTimeout(() => document.getElementById('flash').style.display = 'none', 100);
-            
             const c = document.createElement('canvas');
-            c.width = 1000; c.height = 750; 
+            c.width = 1000; c.height = 750;
             const ctx = c.getContext('2d');
             ctx.translate(1000, 0); ctx.scale(-1, 1);
             
-            // Manual Crop to ensure NO STRETCHING regardless of device
-            const vW = video.videoWidth;
-            const vH = video.videoHeight;
-            const tRatio = 1000 / 750;
-            let sW, sH, sx, sy;
-            if (vW / vH > tRatio) { sH = vH; sW = vH * tRatio; sx = (vW - sW) / 2; sy = 0; }
-            else { sW = vW; sH = vW / tRatio; sx = 0; sy = (vH - sH) / 2; }
+            const vWidth = video.videoWidth;
+            const vHeight = video.videoHeight;
+            const targetRatio = 1000 / 750;
+            let sW = vWidth, sH = vHeight, sx = 0, sy = 0;
+            if (vWidth / vHeight > targetRatio) { sW = vHeight * targetRatio; sx = (vWidth - sW) / 2; }
+            else { sH = vWidth / targetRatio; sy = (vHeight - sH) / 2; }
 
             ctx.drawImage(video, sx, sy, sW, sH, 0, 0, 1000, 750);
             capturedPhotos.push(c.toDataURL('image/jpeg', 0.95));
@@ -195,17 +189,16 @@
         function showResults() {
             document.getElementById('screen-2').classList.remove('active');
             document.getElementById('screen-3').classList.add('active');
-            const list = document.getElementById('photo-list');
-            list.innerHTML = capturedPhotos.map(p => `<img src="${p}" class="preview-img">`).join('');
+            document.getElementById('photo-list').innerHTML = capturedPhotos.map(p => `<img src="${p}" class="preview-img">`).join('');
         }
 
         function createFinalDownload() {
             const canvas = document.getElementById('hidden-canvas');
             const ctx = canvas.getContext('2d');
             
-            // Shortened high-res canvas (no empty space at bottom)
+            // Set canvas height to tightly fit content
             canvas.width = 1200;
-            canvas.height = 3400; 
+            canvas.height = 3450; 
 
             ctx.fillStyle = "#ffffff";
             ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -221,26 +214,25 @@
             });
 
             function build() {
-                const photoW = 1050; 
-                const photoH = 787; // Mathematically linked to 1000/750
+                const photoW = 1050; const photoH = 787;
                 const x = (canvas.width - photoW) / 2;
-
-                // Spacing logic: Matches preview flex layout
+                
                 imgs.forEach((img, i) => {
-                    const y = 80 + (i * 750); 
+                    // Added explicit spacing
+                    const y = 80 + (i * 810);
                     ctx.drawImage(img, x, y, photoW, photoH);
                 });
 
-                // TRT LOGO overlay (Centered between 2nd and 3rd photo)
+                // TRT LOGO centered between photo 2 and 3
                 const trtSize = 360;
-                ctx.drawImage(trtLogo, (canvas.width/2)-(trtSize/2), 1410, trtSize, trtSize);
+                ctx.drawImage(trtLogo, (canvas.width/2)-(trtSize/2), 1500, trtSize, trtSize);
 
-                // Text Logo at bottom
+                // Text Logo at the bottom with no empty space below
                 const txtW = 950; const txtH = 200;
-                ctx.drawImage(textLogo, (canvas.width/2)-(txtW/2), 3150, txtW, txtH);
+                ctx.drawImage(textLogo, (canvas.width/2)-(txtW/2), 3220, txtW, txtH);
 
                 const link = document.createElement('a');
-                link.download = 'TheRedThread_Strip.jpg';
+                link.download = 'RedThread_Strip.jpg';
                 link.href = canvas.toDataURL('image/jpeg', 1.0);
                 link.click();
             }
