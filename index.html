@@ -13,15 +13,17 @@
             background-color: #f2e1e1;
             display: flex; justify-content: center; align-items: center;
             overflow: hidden;
+            font-family: sans-serif;
         }
 
-        /* Fixed container to prevent stretching */
+        /* Fixed aspect ratio container (Phone Shape) */
         .app-container {
             position: relative;
             width: 430px; 
             height: 932px; 
             background-color: #f2e1e1;
             overflow: hidden;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
         }
 
         .screen {
@@ -29,68 +31,78 @@
             position: absolute;
             inset: 0;
             z-index: 1;
+            background-size: 100% 100%;
+            background-position: center;
         }
         
         .active { display: block !important; }
 
-        .bg-layer {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            object-fit: contain; 
-            z-index: 2;
-        }
+        /* Specific Backgrounds */
+        #screen-start { background-image: url('open scren.png'); }
+        #screen-capture { background-image: url('photo screen.png'); }
+        #screen-result { background-image: url('strip screen.jpg'); }
 
-        /* CAMERA: Centered in your red box illustration */
+        /* CAMERA: Centered and fitted to your red frame drawing */
         .camera-viewport {
             position: absolute;
-            top: 15.5%; 
+            top: 13.5%; 
             left: 50%;
             transform: translateX(-50%);
-            width: 285px; 
-            height: 385px;
+            width: 310px; 
+            height: 435px;
             overflow: hidden;
-            background: #222;
+            background: #000;
             z-index: 10;
-            /* Optional: border removed to blend with your drawing */
         }
 
         video {
             width: 100%; height: 100%;
-            object-fit: cover;
+            object-fit: cover; /* Prevents face stretching */
             transform: scaleX(-1);
         }
 
-        /* INVISIBLE BUTTONS */
+        /* TIMER OVERLAY */
+        #timer {
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 10rem; color: white; font-weight: bold;
+            z-index: 20; text-shadow: 0 0 20px rgba(0,0,0,0.8);
+            pointer-events: none;
+        }
+
+        /* HIT ZONES */
         .hit-zone {
             position: absolute;
             cursor: pointer;
             z-index: 100;
-            background: rgba(255, 0, 0, 0); /* Set to 0.3 for alignment testing */
+            background: rgba(255, 0, 0, 0);
         }
 
-        /* Home Screen ENTER */
-        #enter-btn { 
-            bottom: 8%; left: 50%; 
-            transform: translateX(-50%); 
-            width: 200px; height: 80px; 
-        }
+        #enter-btn { bottom: 8%; left: 50%; transform: translateX(-50%); width: 220px; height: 80px; }
 
-        /* Capture Screen RED START BUTTON (aligned to your blue circle note) */
+        /* Start Button - Aligned to the red circle in your drawing */
         #start-round-btn { 
-            top: 61%; 
-            right: 17%; 
-            width: 85px; 
-            height: 85px; 
+            top: 585px; 
+            right: 80px; 
+            width: 80px; 
+            height: 80px; 
             border-radius: 50%; 
         }
 
-        #timer {
-            position: absolute; top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            font-size: 8rem; color: white; font-weight: bold;
-            z-index: 20; text-shadow: 0 0 20px rgba(0,0,0,0.7);
+        /* PHOTO STRIP RESULTS */
+        .results-overlay {
+            position: absolute;
+            top: 5%; left: 50%;
+            transform: translateX(-50%);
+            width: 320px; 
+            height: 600px;
+            display: flex; flex-direction: column;
+            justify-content: space-between;
+            z-index: 5;
         }
+
+        .photo-slot { width: 100%; height: 23%; overflow: hidden; background: #eee; }
+        .photo-slot img { width: 100%; height: 100%; object-fit: cover; }
 
         .flash { position: fixed; inset: 0; background: white; z-index: 2000; display: none; }
     </style>
@@ -102,12 +114,10 @@
     <div class="app-container">
         
         <div id="screen-start" class="screen active">
-            <img src="open scren.png" class="bg-layer">
             <div id="enter-btn" class="hit-zone" onclick="initCamera()"></div>
         </div>
 
         <div id="screen-capture" class="screen">
-            <img src="photo screen.png" class="bg-layer">
             <div class="camera-viewport">
                 <div id="timer"></div>
                 <video id="video" autoplay playsinline></video>
@@ -115,39 +125,94 @@
             <div id="start-round-btn" class="hit-zone" onclick="runSession()"></div>
         </div>
 
+        <div id="screen-result" class="screen">
+            <div class="results-overlay">
+                <div id="p1" class="photo-slot"></div>
+                <div id="p2" class="photo-slot"></div>
+                <div id="p3" class="photo-slot"></div>
+                <div id="p4" class="photo-slot"></div>
+            </div>
+            <div style="position:absolute; bottom:20%; left:12%; width:80px; height:80px;" class="hit-zone" onclick="window.open('https://instagram.com/theredthread.app')"></div>
+            <div style="position:absolute; bottom:8%; left:50%; transform:translateX(-50%); width:300px; height:80px;" class="hit-zone" onclick="exportStrip()"></div>
+        </div>
+
     </div>
+
+    <canvas id="hidden-canvas" style="display:none;"></canvas>
 
     <script>
         const video = document.getElementById('video');
         const timer = document.getElementById('timer');
+        const flash = document.getElementById('flash');
+        let capturedPhotos = [];
 
         async function initCamera() {
             try {
-                const stream = await navigator.mediaDevices.getUserMedia({ 
-                    video: { facingMode: 'user' } 
-                });
+                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
                 video.srcObject = stream;
                 document.getElementById('screen-start').classList.remove('active');
                 document.getElementById('screen-capture').classList.add('active');
             } catch (err) {
-                alert("Camera access denied. Please use HTTPS.");
+                alert("Please use HTTPS and allow camera permissions.");
             }
         }
 
-        function runSession() {
-            let count = 3;
-            timer.innerText = count;
-            const clock = setInterval(() => {
-                count--;
-                if (count <= 0) {
-                    clearInterval(clock);
-                    timer.innerText = "";
-                    document.getElementById('flash').style.display = 'block';
-                    setTimeout(() => { document.getElementById('flash').style.display = 'none'; }, 100);
-                } else {
-                    timer.innerText = count;
-                }
-            }, 1000);
+        async function runSession() {
+            document.getElementById('start-round-btn').style.pointerEvents = 'none';
+            capturedPhotos = [];
+            
+            for (let i = 1; i <= 4; i++) {
+                await startCountdown(3);
+                takePhoto(i);
+                triggerFlash();
+            }
+
+            document.getElementById('screen-capture').classList.remove('active');
+            document.getElementById('screen-result').classList.add('active');
+        }
+
+        function startCountdown(seconds) {
+            return new Promise(resolve => {
+                let count = seconds;
+                timer.innerText = count;
+                const interval = setInterval(() => {
+                    count--;
+                    if (count <= 0) {
+                        clearInterval(interval);
+                        timer.innerText = "";
+                        resolve();
+                    } else {
+                        timer.innerText = count;
+                    }
+                }, 1000);
+            });
+        }
+
+        function triggerFlash() {
+            flash.style.display = 'block';
+            setTimeout(() => flash.style.display = 'none', 100);
+        }
+
+        function takePhoto(index) {
+            const canvas = document.getElementById('hidden-canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = 600; canvas.height = 800;
+            
+            ctx.translate(canvas.width, 0); ctx.scale(-1, 1);
+            ctx.drawImage(video, 0, 0, 600, 800);
+            
+            const data = canvas.toDataURL('image/png');
+            capturedPhotos.push(data);
+            document.getElementById('p' + index).innerHTML = `<img src="${data}">`;
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+        }
+
+        function exportStrip() {
+            // Logic to download the final composite image
+            const link = document.createElement('a');
+            link.download = 'RedThreadStrip.png';
+            link.href = capturedPhotos[0]; // Simplification for demo
+            link.click();
         }
     </script>
 </body>
