@@ -26,28 +26,27 @@
         .active { display: block !important; }
         .bg-layer { position: absolute; width: 100%; height: 100%; object-fit: contain; z-index: 1; }
 
-        /* THE FIX: Absolute Floating Instagram Link */
+        /* THE FIX: Absolute Floating Instagram Link precisely over the icon */
         #ig-link {
             position: absolute;
-            top: 15%; 
-            left: 10%; 
-            width: 30%; 
-            height: 12%;
-            z-index: 9999 !important; /* Forces it above EVERYTHING */
-            display: none; /* Only shows on screen 3 */
+            top: 73.5%; /* Positioned exactly over the Instagram icon area */
+            left: 21%; 
+            width: 25%; 
+            height: 10%;
+            z-index: 9999 !important; 
+            display: none; 
             cursor: pointer;
-            background: rgba(0,0,0,0); /* Invisible but solid hit area */
+            background: rgba(0,0,0,0); 
         }
 
-        /* STRIP PREVIEW - Single Merged Image */
+        /* STRIP PREVIEW */
         .strip-preview-area {
             position: absolute; top: 10%; left: 65%; transform: translateX(-50%);
             width: 42%; height: auto; z-index: 20;
         }
         
         #merged-preview-img {
-            width: 100%; height: auto;
-            display: block;
+            width: 100%; height: auto; display: block;
             box-shadow: 0 4px 20px rgba(0,0,0,0.2);
             pointer-events: auto !important;
             -webkit-touch-callout: default !important;
@@ -61,14 +60,29 @@
         }
         video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
 
-        /* HIT ZONES */
+        /* REPOSITIONED HIT ZONES based on your sketch */
         .hitbox { position: absolute; z-index: 40; cursor: pointer; }
+        
         #enter-btn { bottom: 4%; left: 50%; transform: translateX(-50%); width: 70%; height: 15%; }
         #start-btn { top: 58%; right: 14%; width: 22%; height: 12%; }
-        #dl-btn { bottom: 12%; left: 50%; transform: translateX(-50%); width: 80%; height: 7%; }
+        
+        /* Moved Download Up per your drawing */
+        #dl-btn { 
+            bottom: 6%; 
+            left: 50%; 
+            transform: translateX(-50%); 
+            width: 80%; 
+            height: 10%; 
+        }
+        
+        /* Retake at the absolute bottom */
         #retake-btn { 
-            bottom: 6.5%; left: 50%; transform: translateX(-50%); 
-            width: 50%; height: 4%; display: flex; justify-content: center; align-items: center;
+            bottom: 2%; 
+            left: 50%; 
+            transform: translateX(-50%); 
+            width: 50%; 
+            height: 4%; 
+            display: flex; justify-content: center; align-items: center;
             font-weight: bold; font-size: 11px; color: #b31d1d; text-decoration: underline;
         }
 
@@ -178,9 +192,7 @@
             let loaded = 0;
             const checkLoaded = () => {
                 loaded++;
-                if (loaded === 6) { // 4 photos + 2 logos
-                    drawFinal();
-                }
+                if (loaded === 6) drawFinal();
             };
 
             const imgs = capturedPhotos.map(src => {
@@ -202,11 +214,9 @@
                 ctx.drawImage(trtLogo, (canvas.width/2)-180, 1500, 360, 360);
                 ctx.drawImage(textLogo, (canvas.width/2)-490, 3400, 980, 200);
 
-                // Convert to single image for the preview
                 const finalStripUrl = canvas.toDataURL('image/jpeg', 0.95);
                 document.getElementById('merged-preview-img').src = finalStripUrl;
                 
-                // Show Screen 3 and Show the IG Link
                 document.getElementById('screen-2').classList.remove('active');
                 document.getElementById('screen-3').classList.add('active');
                 igLink.style.display = 'block'; 
