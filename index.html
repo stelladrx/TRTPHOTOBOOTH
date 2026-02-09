@@ -6,33 +6,54 @@
     <title>The Red Thread Photobooth</title>
     <style>
         :root { --booth-red: #b31d1d; }
-        body, html { margin: 0; padding: 0; height: 100%; width: 100%; background-color: #f2e1e1; display: flex; justify-content: center; align-items: center; overflow: hidden; font-family: sans-serif; }
+        
+        /* Mobile Height Fix: Ensures the app fits even with browser bars */
+        body, html { 
+            margin: 0; padding: 0; 
+            height: 100%; width: 100%; 
+            background-color: #f2e1e1; 
+            display: flex; justify-content: center; align-items: center; 
+            overflow: hidden; 
+        }
 
-        .app-container { position: relative; width: 430px; height: 932px; background-color: #f2e1e1; overflow: hidden; }
+        .app-container { 
+            position: relative; 
+            width: 100vw; 
+            height: 100vh; 
+            max-width: 430px; /* iPhone Pro Max Width */
+            max-height: 932px; 
+            background-color: #f2e1e1; 
+            overflow: hidden; 
+        }
+
         .screen { display: none; position: absolute; inset: 0; z-index: 1; }
         .active { display: block !important; }
         .bg-layer { position: absolute; width: 100%; height: 100%; object-fit: contain; z-index: 2; }
 
-        /* Camera Frame Fix */
+        /* Camera Frame */
         .camera-viewport {
             position: absolute; top: 15.6%; left: 50%; transform: translateX(-50%);
-            width: 255px; height: 350px; overflow: hidden; background: #222; z-index: 10;
+            width: 60%; height: 38%; overflow: hidden; background: #000; z-index: 10;
         }
         video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
 
-        /* Result Strip Fix */
+        /* Preview Strip Layout */
         .strip-overlay-container {
-            position: absolute; top: 5.8%; left: 50%; transform: translateX(-50%);
-            width: 135px; z-index: 10; display: flex; flex-direction: column; align-items: center;
+            position: absolute; top: 5%; left: 50%; transform: translateX(-50%);
+            width: 33%; height: 75%; z-index: 10; 
+            display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
+            padding-top: 10px;
         }
-        .strip-photo { width: 110px; height: 145px; margin-bottom: 23px; object-fit: cover; background: #fff; }
+        .strip-photo { width: 85%; height: 17.5%; margin-bottom: 5.5%; object-fit: cover; background: #fff; }
 
-        /* Invisible Hit Zones */
-        .hit-zone { position: absolute; cursor: pointer; z-index: 100; }
-        #enter-btn { bottom: 8%; left: 50%; transform: translateX(-50%); width: 200px; height: 80px; }
-        #start-round-btn { top: 61.5%; right: 17%; width: 85px; height: 85px; border-radius: 50%; }
-        #ig-link { bottom: 25.5%; left: 24%; width: 50px; height: 50px; }
-        #dl-final { bottom: 9.5%; left: 50%; transform: translateX(-50%); width: 280px; height: 75px; }
+        /* Hit Zones */
+        .hit-zone { position: absolute; cursor: pointer; z-index: 100; background: rgba(0,0,0,0); }
+        #enter-btn { bottom: 5%; left: 50%; transform: translateX(-50%); width: 50%; height: 10%; }
+        #start-round-btn { top: 61%; right: 15%; width: 22%; height: 10%; border-radius: 50%; }
+        
+        /* FIXED IG AND DOWNLOAD BUTTONS */
+        #ig-link { bottom: 24%; left: 10%; width: 25%; height: 10%; }
+        #dl-final { bottom: 7%; left: 50%; transform: translateX(-50%); width: 75%; height: 8%; }
 
         #timer { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 8rem; color: white; font-weight: bold; z-index: 20; text-shadow: 0 0 20px black; }
         .flash { position: fixed; inset: 0; background: white; z-index: 2000; display: none; }
@@ -57,7 +78,7 @@
         <div id="screen-result" class="screen">
             <img src="strip screen.png" class="bg-layer">
             <div class="strip-overlay-container" id="final-strip-area"></div>
-            <div id="ig-link" class="hit-zone" onclick="window.open('https://instagram.com/theredthread.app', '_blank')"></div>
+            <div id="ig-link" class="hit-zone" onclick="window.location.href='https://www.instagram.com/theredthread.app/'"></div>
             <div id="dl-final" class="hit-zone" onclick="saveFullStrip()"></div>
         </div>
     </div>
@@ -72,11 +93,13 @@
 
         async function initCamera() {
             try {
-                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: 1280, height: 720 } });
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } } 
+                });
                 video.srcObject = stream;
                 document.getElementById('screen-start').classList.remove('active');
                 document.getElementById('screen-capture').classList.add('active');
-            } catch (err) { alert("Enable camera access via HTTPS."); }
+            } catch (err) { alert("Please allow camera access."); }
         }
 
         async function startBoothSession() {
@@ -104,9 +127,9 @@
             flash.style.display = 'block'; setTimeout(() => flash.style.display = 'none', 100);
             const tempCanvas = document.createElement('canvas');
             const ctx = tempCanvas.getContext('2d');
-            tempCanvas.width = 600; tempCanvas.height = 800;
-            ctx.translate(600, 0); ctx.scale(-1, 1);
-            ctx.drawImage(video, 0, 0, 600, 800);
+            tempCanvas.width = 800; tempCanvas.height = 1000;
+            ctx.translate(800, 0); ctx.scale(-1, 1);
+            ctx.drawImage(video, 0, 0, 800, 1000);
             sessionPhotos.push(tempCanvas.toDataURL('image/png'));
         }
 
@@ -119,28 +142,38 @@
             const canvas = document.getElementById('merge-canvas');
             const ctx = canvas.getContext('2d');
             const frameImg = new Image();
-            frameImg.src = 'photo strip frame.png'; //
+            frameImg.src = 'photo strip frame.png';
 
             frameImg.onload = function() {
                 canvas.width = frameImg.width;
                 canvas.height = frameImg.height;
 
-                // 1. Draw Photos FIRST (Behind)
-                sessionPhotos.forEach((data, i) => {
+                // Create an array of image objects to track loading
+                let loadedCount = 0;
+                const imagesToDraw = sessionPhotos.map((data, i) => {
                     const img = new Image();
                     img.src = data;
                     img.onload = () => {
-                        // These coordinates align with the boxes in your frame
-                        ctx.drawImage(img, 45, 55 + (i * 185), 135, 165); 
-                        if (i === 3) {
-                            // 2. Draw Frame SECOND (On top)
+                        loadedCount++;
+                        if (loadedCount === 4) {
+                            // ALL PHOTOS LOADED - Draw them in order
+                            imagesToDraw.forEach((pImg, idx) => {
+                                // DRAWING LOGIC: X, Y, Width, Height
+                                // Y starts at 50px and drops by ~395px each time
+                                ctx.drawImage(pImg, 48, 48 + (idx * 398), 345, 345);
+                            });
+                            
+                            // Draw the frame ON TOP
                             ctx.drawImage(frameImg, 0, 0);
+                            
+                            // Trigger Download
                             const link = document.createElement('a');
                             link.download = 'RedThread_Booth_Strip.png';
                             link.href = canvas.toDataURL('image/png');
                             link.click();
                         }
                     };
+                    return img;
                 });
             };
         }
