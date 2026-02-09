@@ -13,13 +13,13 @@
             display: flex; justify-content: center; align-items: center;
         }
 
-        /* Essential Mobile Fix: Use dvh to prevent overflow */
+        /* The scaling container: adjusts based on phone height */
         .app-container { 
             position: relative; 
             width: 100vw; 
-            height: 100dvh; 
-            max-width: 400px; /* Slightly narrower for better phone fit */
-            max-height: 850px; 
+            height: 100dvh; /* Dynamic viewport height to avoid browser bar overlap */
+            max-width: 414px; 
+            aspect-ratio: 9 / 19.5; /* Matches iPhone proportions */
             background-color: #f2e1e1; 
             overflow: hidden;
         }
@@ -30,49 +30,53 @@
 
         /* CAMERA VIEWPORT */
         .camera-viewport {
-            position: absolute; top: 13%; left: 50%; transform: translateX(-50%);
-            width: 65%; height: 37%; overflow: hidden; background: #000; z-index: 5;
+            position: absolute; top: 12.5%; left: 50%; transform: translateX(-50%);
+            width: 66%; height: 38.5%; overflow: hidden; background: #000; z-index: 5;
         }
         video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
 
-        /* STRIP PREVIEW - MATCHES DOWNLOAD PROPORTIONS */
+        /* STRIP PREVIEW - EXACT MATCH TO DOWNLOAD */
         .strip-preview-area {
-            position: absolute; top: 5%; left: 50%; transform: translateX(-50%);
-            width: 32%; height: 74%; z-index: 5;
+            position: absolute; top: 4.5%; left: 50%; transform: translateX(-50%);
+            width: 32.5%; height: 75%; z-index: 5;
             background: white; 
             display: flex; flex-direction: column; align-items: center;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-            padding-top: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
         }
         
         .preview-photos-container {
             width: 100%; display: flex; flex-direction: column; align-items: center;
+            padding-top: 8px;
         }
 
         .preview-img { 
             width: 88%; height: auto; aspect-ratio: 1000 / 750;
-            margin-bottom: 6%; object-fit: cover; 
+            margin-bottom: 7%; object-fit: cover; 
         }
 
         .preview-trt-logo { 
-            position: absolute; top: 40.5%; width: 30%; z-index: 10; 
+            position: absolute; top: 40.8%; width: 32%; z-index: 10; 
         }
 
         .preview-text-logo { 
-            width: 80%; margin-top: auto; padding-bottom: 12px; 
+            width: 85%; margin-top: auto; padding-bottom: 15px; z-index: 10;
         }
 
-        /* HIT ZONES - Adjusted for smaller mobile container */
+        /* HIT ZONES */
         .hitbox { position: absolute; z-index: 20; cursor: pointer; background: rgba(0,0,0,0); }
-        #enter-btn { bottom: 6%; left: 50%; transform: translateX(-50%); width: 50%; height: 8%; }
-        #start-btn { top: 57%; right: 13%; width: 22%; height: 12%; border-radius: 50%; }
-        #ig-btn { bottom: 22%; left: 10%; width: 25%; height: 7%; }
-        #dl-btn { bottom: 7%; left: 50%; transform: translateX(-50%); width: 75%; height: 8%; }
+        
+        #enter-btn { bottom: 6%; left: 50%; transform: translateX(-50%); width: 60%; height: 10%; }
+        #start-btn { top: 58%; right: 14%; width: 22%; height: 12%; border-radius: 50%; }
+        #ig-btn { bottom: 22%; left: 9%; width: 25%; height: 8%; }
+        
+        /* New stacked button positions */
+        #dl-btn { bottom: 8.5%; left: 50%; transform: translateX(-50%); width: 80%; height: 6.5%; }
+        #retake-btn { bottom: 2%; left: 50%; transform: translateX(-50%); width: 50%; height: 5%; text-align: center; color: #b31d1d; font-family: sans-serif; font-weight: bold; font-size: 0.9rem; padding-top: 5px; }
 
         #timer { 
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); 
-            font-size: 5rem; color: white; font-weight: bold; z-index: 100; 
-            text-shadow: 0 0 15px #000;
+            font-size: 6rem; color: white; font-weight: bold; z-index: 100; 
+            text-shadow: 0 0 20px #000;
         }
         .flash { position: fixed; inset: 0; background: white; z-index: 2000; display: none; }
     </style>
@@ -103,8 +107,11 @@
                 <img src="TRT LOGO.png" class="preview-trt-logo">
                 <img src="text logo.png" class="preview-text-logo">
             </div>
+            
             <div id="ig-btn" class="hitbox" onclick="window.location.href='https://instagram.com/theredthread.app'"></div>
             <div id="dl-btn" class="hitbox" onclick="createFinalDownload()"></div>
+            
+            <div id="retake-btn" class="hitbox" onclick="location.reload()">RETAKE PHOTOS</div>
         </div>
     </div>
 
@@ -118,14 +125,12 @@
         async function startCamera() {
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ 
-                    video: { facingMode: 'user' } 
+                    video: { facingMode: 'user', aspectRatio: 1 } 
                 });
                 video.srcObject = stream;
                 document.getElementById('screen-1').classList.remove('active');
                 document.getElementById('screen-2').classList.add('active');
-            } catch (err) {
-                alert("Please use HTTPS and allow camera access.");
-            }
+            } catch (err) { alert("Camera error: Please use HTTPS."); }
         }
 
         async function takeFourPhotos() {
@@ -140,9 +145,9 @@
         function doCountdown(sec) {
             return new Promise(res => {
                 let count = sec; timer.innerText = count;
-                const interval = setInterval(() => {
+                const clock = setInterval(() => {
                     count--;
-                    if (count <= 0) { clearInterval(interval); timer.innerText = ""; res(); }
+                    if (count <= 0) { clearInterval(clock); timer.innerText = ""; res(); }
                     else { timer.innerText = count; }
                 }, 1000);
             });
@@ -153,14 +158,14 @@
             setTimeout(() => document.getElementById('flash').style.display = 'none', 100);
             
             const c = document.createElement('canvas');
-            c.width = 1000; c.height = 750; // Exact aspect ratio for download
+            c.width = 1000; c.height = 750;
             const ctx = c.getContext('2d');
-            
             ctx.translate(1000, 0); ctx.scale(-1, 1);
-            ctx.filter = 'contrast(1.05) brightness(1.02)';
+            
+            // Apply grainy booth filter
+            ctx.filter = 'contrast(1.06) brightness(1.02)';
             ctx.drawImage(video, 0, 0, 1000, 750);
             
-            // Add grain texture
             for (let i = 0; i < 6000; i++) {
                 ctx.fillStyle = `rgba(255,255,255,${Math.random() * 0.03})`;
                 ctx.fillRect(Math.random() * 1000, Math.random() * 750, 1, 1);
@@ -179,9 +184,9 @@
             const canvas = document.getElementById('hidden-canvas');
             const ctx = canvas.getContext('2d');
             
-            // Fixed high-res dimensions
+            // Proportional dimensions to match the preview exactly
             canvas.width = 1200;
-            canvas.height = 3700; 
+            canvas.height = 3600; 
 
             ctx.fillStyle = "#ffffff";
             ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -199,19 +204,22 @@
 
             function build() {
                 const photoW = 1050;
-                const photoH = 787; // Matches 1000/750 ratio
+                const photoH = 787; // Matches 1000/750 ratio exactly
                 const x = (canvas.width - photoW) / 2;
 
                 imgs.forEach((img, i) => {
-                    const y = 80 + (i * 810);
+                    // Vertical spacing math matches preview gaps
+                    const y = 80 + (i * 770); 
                     ctx.drawImage(img, x, y, photoW, photoH);
                 });
 
-                const trtSize = 300;
-                ctx.drawImage(trtLogo, (canvas.width/2)-(trtSize/2), 1545, trtSize, trtSize);
+                // TRT LOGO centered over the middle gap
+                const trtSize = 340;
+                ctx.drawImage(trtLogo, (canvas.width/2)-(trtSize/2), 1460, trtSize, trtSize);
 
-                const txtW = 900; const txtH = 180;
-                ctx.drawImage(textLogo, (canvas.width/2)-(txtW/2), 3450, txtW, txtH);
+                // Text Logo at the bottom
+                const txtW = 950; const txtH = 200;
+                ctx.drawImage(textLogo, (canvas.width/2)-(txtW/2), 3320, txtW, txtH);
 
                 const link = document.createElement('a');
                 link.download = 'TheRedThread_Strip.jpg';
