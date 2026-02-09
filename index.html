@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Red Thread Photobooth</title>
+    <style>
+        :root {
+            --booth-red: #b31d1d;
+            --soft-pink: #f2e1e1;
+        }
+
+        body, html {
+            margin: 0; padding: 0;
+            height: 100%; width: 100%;
+            background-color: var(--soft-pink);
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            overflow: hidden;
+            display: flex; justify-content: center; align-items: center;
+        }
+
+        /* Beautifying & Grainy Filter Effects */
+        .filter-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            /* Photo booth style: High contrast, brightness boost, and slight softening */
+            filter: contrast(1.1) brightness(1.05) saturate(1.1) blur(0.3px);
+        }
+
+        .grain-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: url('https://www.transparenttextures.com/patterns/stardust.png');
+            opacity: 0.12; pointer-events: none; z-index: 100;
+        }
+
+        /* UI Screens */
+        .screen { display: none; flex-direction: column; align-items: center; width: 100%; height: 100%; position: absolute; }
+        .active { display: flex; }
+
+        /* Start Screen using your uploaded background */
+        #screen-start {
+            background: url('photobooth with bg.jpg') no-repeat center center;
+            background-size: contain;
+            justify-content: flex-end;
+            padding-bottom: 50px;
+        }
+
+        /* Camera Viewport */
+        .camera-box {
+            position: relative;
+            width: 320px;
+            height: 480px;
+            border: 10px solid var(--booth-red);
+            background: #000;
+            margin-top: 50px;
+            overflow: hidden;
+        }
+
+        video {
+            height: 100%; width: auto;
+            position: absolute; left: 50%;
+            transform: translateX(-50%) scaleX(-1);
+        }
+
+        #timer {
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 8rem; color: white; font-weight: bold;
+            text-shadow: 0 0 20px rgba(179, 29, 29, 0.8);
+            z-index: 10;
+        }
+
+        /* Result Strip */
+        .strip {
+            background: white;
+            padding: 10px;
+            width: 160px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .slot { width: 100%; height: 200px; background: #eee; margin-bottom: 8px; overflow: hidden; }
+        .slot img { width: 100%; height: 100%; object-fit: cover; }
+
+        .logo-sticker { width: 60px; margin: 5px auto; display: block; }
+
+        .btn-red {
+            background: var(--booth-red);
+            color: white; border: none;
+            padding: 15px 40px; border-radius: 5px;
+            font-weight: bold; cursor: pointer;
+            text-transform: uppercase;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="grain-overlay"></div>
+
+    <div id="screen-start" class="screen active">
+        <button class="btn-red" onclick="startBooth()">Enter Booth</button>
+    </div>
+
+    <div id="screen-capture" class="screen" style="background: url('set up screen with bg.jpg') no-repeat center center; background-size: cover;">
+        <div class="camera-box">
+            <div id="timer"></div>
+            <div class="filter-container">
+                <video id="video" autoplay playsinline></video>
+            </div>
+        </div>
+        <button id="snap-btn" class="btn-red" style="margin-top: 20px;" onclick="beginSession()">Start (3s Countdown)</button>
+    </div>
+
+    <div id="screen-result" class="screen">
+        <div class="strip">
+            <div id="p1" class="slot"></div>
+            <div id="p2" class="slot"></div>
+            <img src="Artboard 1@3x.png" class="logo-sticker" alt="Logo">
+            <div id="p3" class="slot"></div>
+            <div id="p4" class="slot"></div>
+        </div>
+        <div style="margin-top: 20px;">
+            <button class="btn-red" onclick="location.reload()">Retry</button>
+        </div>
+    </div>
+
+    <canvas id="canvas" width="600" height="800" style="display:none;"></canvas>
+
+    <script>
+        const video = document.getElementById('video');
+        const timer = document.getElementById('timer');
+        let captured = [];
+
+        async function startBooth() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                video.srcObject = stream;
+                document.getElementById('screen-start').classList.remove('active');
+                document.getElementById('screen-capture').classList.add('active');
+            } catch (err) { alert("Camera access denied."); }
+        }
+
+        async function beginSession() {
+            document.getElementById('snap-btn').style.display = 'none';
+            captured = [];
+            
+            for (let i = 1; i <= 4; i++) {
+                await countdown(3);
+                takePhoto(i);
+            }
+
+            document.getElementById('screen-capture').classList.remove('active');
+            document.getElementById('screen-result').classList.add('active');
+        }
+
+        function countdown(sec) {
+            return new Promise(resolve => {
+                let time = sec;
+                timer.innerText = time;
+                const clock = setInterval(() => {
+                    time--;
+                    if (time === 0) {
+                        clearInterval(clock);
+                        timer.innerText = "";
+                        resolve();
+                    } else {
+                        timer.innerText = time;
+                    }
+                }, 1000);
+            });
+        }
+
+        function takePhoto(index) {
+            const canvas = document.getElementById('canvas');
+            const ctx = canvas.getContext('2d');
+            
+            // Apply beautifying contrast/brightness to the canvas capture
+            ctx.filter = "contrast(1.1) brightness(1.05)";
+            
+            // Mirror and draw center-cropped portrait
+            ctx.translate(canvas.width, 0);
+            ctx.scale(-1, 1);
+            ctx.drawImage(video, 0, 0, video.videoWidth, video.videoHeight, -100, 0, 800, 800);
+            
+            const data = canvas.toDataURL('image/png');
+            captured.push(data);
+            document.getElementById('p' + index).innerHTML = `<img src="${data}">`;
+            
+            // Reset transformation for next photo
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+        }
+    </script>
+</body>
+</html>
