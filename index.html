@@ -33,45 +33,35 @@
         }
         video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
 
-        /* STRIP PREVIEW - Now allows long-press to save */
+        /* STRIP PREVIEW - Displays the merged single image */
         .strip-preview-area {
             position: absolute; top: 10%; left: 65%; transform: translateX(-50%);
-            width: 40%; height: auto; z-index: 5; background: white; 
-            display: flex; flex-direction: column; align-items: center;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.15); padding: 12px 0;
+            width: 40%; height: auto; z-index: 10;
             user-select: all; -webkit-user-select: all;
         }
         
-        .preview-photos-container {
-            width: 100%; display: flex; flex-direction: column; align-items: center; gap: 6px;
-            pointer-events: auto; /* Ensures images can be interacted with */
-        }
-
-        .preview-img { 
-            width: 88%; height: auto; aspect-ratio: 1000 / 750; 
-            object-fit: cover; z-index: 2;
+        #merged-preview-img {
+            width: 100%; height: auto;
             display: block;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            pointer-events: auto; /* Crucial for long-press */
         }
-        
-        .preview-trt-logo { position: absolute; top: 40.5%; width: 35%; z-index: 10; pointer-events: none; }
-        .preview-text-logo { width: 82%; margin-top: 10px; padding-bottom: 5px; pointer-events: none; }
 
-        /* HIT ZONES */
-        .hitbox { position: absolute; z-index: 40; cursor: pointer; display: block; }
-
-        #enter-btn { bottom: 4%; left: 50%; transform: translateX(-50%); width: 70%; height: 15%; }
-        #start-btn { top: 58%; right: 14%; width: 22%; height: 12%; }
-        #dl-btn { bottom: 12%; left: 50%; transform: translateX(-50%); width: 80%; height: 7%; }
-
-        /* TAG US FIX: Real link element instead of just a div */
+        /* TAG US LINK - Native Anchor */
         .tag-us-link {
             position: absolute;
             top: 15%; left: 18%; transform: translateX(-50%);
             width: 30%; height: 12%;
             z-index: 100;
             display: block;
-            /* background: rgba(0,255,0,0.2); /* Toggle for testing */
+            background: transparent;
         }
+
+        /* HIT ZONES */
+        .hitbox { position: absolute; z-index: 40; cursor: pointer; }
+        #enter-btn { bottom: 4%; left: 50%; transform: translateX(-50%); width: 70%; height: 15%; }
+        #start-btn { top: 58%; right: 14%; width: 22%; height: 12%; }
+        #dl-btn { bottom: 12%; left: 50%; transform: translateX(-50%); width: 80%; height: 7%; }
 
         #retake-btn { 
             bottom: 6.5%; left: 50%; transform: translateX(-50%); 
@@ -107,15 +97,13 @@
         <div id="screen-3" class="screen">
             <img src="strip screen.png" class="bg-layer">
             
-            <a href="https://instagram.com/theredthread.app" target="_blank" class="tag-us-link"></a>
+            <a href="https://instagram.com/theredthread.app" target="_blank" class="tag-us-link" id="ig-link"></a>
 
             <div class="strip-preview-area">
-                <div class="preview-photos-container" id="photo-list"></div>
-                <img src="TRT LOGO.png" class="preview-trt-logo">
-                <img src="text logo.png" class="preview-text-logo">
+                <img id="merged-preview-img" src="" alt="Long press to save strip">
             </div>
             
-            <div id="dl-btn" class="hitbox" onclick="createFinalDownload()"></div>
+            <div id="dl-btn" class="hitbox" onclick="downloadStrip()"></div>
             <div id="retake-btn" class="hitbox" onclick="location.reload()">RETAKE PHOTOS</div>
         </div>
     </div>
@@ -142,7 +130,7 @@
                 await doCountdown(3);
                 snap();
             }
-            showResults();
+            generateMergedPreview();
         }
 
         function doCountdown(sec) {
@@ -175,15 +163,8 @@
             capturedPhotos.push(c.toDataURL('image/jpeg', 0.9));
         }
 
-        function showResults() {
-            document.getElementById('screen-2').classList.remove('active');
-            document.getElementById('screen-3').classList.add('active');
-            document.getElementById('photo-list').innerHTML = capturedPhotos.map(p => 
-                `<img src="${p}" class="preview-img" alt="Photobooth Image">`
-            ).join('');
-        }
-
-        function createFinalDownload() {
+        // Create the single image for long-press saving
+        function generateMergedPreview() {
             const canvas = document.getElementById('hidden-canvas');
             const ctx = canvas.getContext('2d');
             canvas.width = 1200; canvas.height = 3680; 
@@ -196,7 +177,15 @@
             let loaded = 0;
             const imgs = capturedPhotos.map(src => {
                 const img = new Image(); img.src = src;
-                img.onload = () => { loaded++; if(loaded === 4) build(); };
+                img.onload = () => { 
+                    loaded++; 
+                    if(loaded === 4) {
+                        // Wait for logos to load too
+                        trtLogo.onload = textLogo.onload = () => build();
+                        // If they are already cached:
+                        if(trtLogo.complete && textLogo.complete) build();
+                    } 
+                };
                 return img;
             });
 
@@ -212,12 +201,27 @@
                 const txtW = 980; const txtH = 200;
                 ctx.drawImage(textLogo, (canvas.width/2)-(txtW/2), 3400, txtW, txtH);
 
-                const link = document.createElement('a');
-                link.download = 'TheRedThread_Strip.jpg';
-                link.href = canvas.toDataURL('image/jpeg', 1.0);
-                link.click();
+                // Set the single merged image as the preview source
+                const finalData = canvas.toDataURL('image/jpeg', 0.95);
+                document.getElementById('merged-preview-img').src = finalData;
+
+                document.getElementById('screen-2').classList.remove('active');
+                document.getElementById('screen-3').classList.add('active');
             }
         }
+
+        function downloadStrip() {
+            const dataUrl = document.getElementById('merged-preview-img').src;
+            const link = document.createElement('a');
+            link.download = 'TheRedThread_Strip.jpg';
+            link.href = dataUrl;
+            link.click();
+        }
+
+        // Force Link Sensitivity for Mobile
+        document.getElementById('ig-link').addEventListener('touchstart', function() {
+            window.open('https://instagram.com/theredthread.app', '_blank');
+        });
     </script>
 </body>
 </html>
