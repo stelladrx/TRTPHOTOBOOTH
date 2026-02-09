@@ -3,60 +3,61 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Red Thread • Photo Booth</title>
+    <title>The Red Thread Photobooth</title>
     <style>
         :root {
             --booth-red: #b31d1d;
-            --soft-pink: #f2e1e1;
         }
 
         body, html {
             margin: 0; padding: 0;
             height: 100%; width: 100%;
-            background-color: var(--soft-pink);
             font-family: 'Helvetica Neue', sans-serif;
+            background-color: #f2e1e1;
             overflow: hidden;
             display: flex; justify-content: center; align-items: center;
         }
 
-        /* 80s Grain & Beauty Filter */
-        .filter-applied {
-            filter: contrast(1.1) brightness(1.1) saturate(1.1) blur(0.2px);
+        /* Page Layouts using your Assets */
+        .screen { 
+            display: none; 
+            flex-direction: column; 
+            align-items: center; 
+            width: 100%; height: 100%; 
+            position: absolute; 
+            background-size: contain;
+            background-position: center;
+            background-repeat: no-repeat;
         }
-
-        .grain-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: url('https://www.transparenttextures.com/patterns/stardust.png');
-            opacity: 0.15; pointer-events: none; z-index: 100;
-        }
-
-        .screen { display: none; flex-direction: column; align-items: center; width: 100%; height: 100%; position: absolute; }
+        
         .active { display: flex; }
 
-        /* Start Screen */
-        #screen-start {
-            background: url('photobooth with bg.jpg') no-repeat center center;
-            background-size: contain;
-            justify-content: flex-end;
-            padding-bottom: 80px;
-        }
+        /* Screen 1: Open Screen */
+        #screen-start { background-image: url('open scren.png'); }
 
-        /* Capture UI */
-        #screen-capture {
-            background: url('set up screen with bg.jpg') no-repeat center center;
-            background-size: cover;
-        }
+        /* Screen 2: Photo Screen */
+        #screen-capture { background-image: url('photo screen.png'); }
 
-        .camera-viewport {
+        /* Screen 3: Strip Screen */
+        #screen-result { background-image: url('strip screen.png'); }
+
+        /* Camera Positioning (Aligned to the frame in your photo screen.png) */
+        .camera-container {
             position: relative;
-            width: 300px; height: 400px;
-            border: 8px solid white;
-            background: #000;
-            margin-top: 60px;
+            margin-top: 15.5vh; /* Adjusted to fit your illustration's window */
+            width: 72vw;
+            max-width: 290px;
+            aspect-ratio: 3 / 4;
             overflow: hidden;
+            border-radius: 4px;
         }
 
-        video { height: 100%; width: auto; position: absolute; left: 50%; transform: translateX(-50%) scaleX(-1); }
+        video {
+            height: 100%; width: auto;
+            position: absolute; left: 50%;
+            transform: translateX(-50%) scaleX(-1);
+            filter: contrast(1.1) brightness(1.05) saturate(1.1);
+        }
 
         #timer {
             position: absolute; top: 50%; left: 50%;
@@ -66,89 +67,76 @@
             z-index: 10;
         }
 
-        /* Results Screen */
-        .strip-wrapper {
+        /* Results Display (Aligned to your strip screen.png) */
+        .results-overlay {
             position: relative;
-            width: 160px; /* Scaled for preview */
-            height: 480px;
+            margin-top: 4.5vh;
+            width: 32vw;
+            max-width: 135px;
+            height: 62vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 15px 0;
+            box-sizing: border-box;
         }
 
-        #frame-img {
-            position: absolute; top: 0; left: 0;
-            width: 100%; height: 100%;
-            z-index: 5; pointer-events: none;
+        .photo-slot { width: 100%; height: 21%; overflow: hidden; }
+        .photo-slot img { width: 100%; height: 100%; object-fit: cover; }
+
+        /* Invisible clickable areas over your asset buttons */
+        .hit-zone {
+            position: absolute;
+            cursor: pointer;
+            border: none;
+            background: transparent;
         }
 
-        .photo-slots-container {
-            position: absolute; top: 0; left: 0;
-            width: 100%; height: 100%;
-            display: flex; flex-direction: column;
-            align-items: center; justify-content: space-evenly;
-            padding: 20px 0; box-sizing: border-box;
-        }
+        #enter-btn { bottom: 10%; width: 50%; height: 10%; }
+        #start-session-btn { bottom: 12%; width: 30%; height: 30%; left: 60%; } /* Over the red button illustration */
+        #download-hit { bottom: 5%; width: 60%; height: 8%; }
+        #instagram-hit { bottom: 18%; left: 10%; width: 15%; height: 7%; }
 
-        .captured-slot {
-            width: 85%; height: 18%; /* Fits inside the white boxes of the frame */
-            background: #eee; overflow: hidden;
-        }
-
-        .captured-slot img { width: 100%; height: 100%; object-fit: cover; }
-
-        .btn-red {
-            background: var(--booth-red);
-            color: white; border: none;
-            padding: 12px 30px; border-radius: 4px;
-            font-weight: bold; cursor: pointer;
-            text-transform: uppercase; margin: 5px;
-        }
-
-        .social-icon { margin-top: 15px; width: 50px; cursor: pointer; }
+        .flash { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 1000; display: none; }
     </style>
 </head>
 <body>
 
-    <div class="grain-overlay"></div>
+    <div id="flash" class="flash"></div>
 
     <div id="screen-start" class="screen active">
-        <button class="btn-red" onclick="initCamera()">Enter Booth</button>
+        <button id="enter-btn" class="hit-zone" onclick="initCamera()"></button>
     </div>
 
     <div id="screen-capture" class="screen">
-        <div class="camera-viewport">
+        <div class="camera-container">
             <div id="timer"></div>
-            <div class="filter-applied">
-                <video id="video" autoplay playsinline></video>
-            </div>
+            <video id="video" autoplay playsinline></video>
         </div>
-        <button id="start-btn" class="btn-red" style="margin-top: 30px;" onclick="runBooth()">Start 3s Timer</button>
+        <button id="start-session-btn" class="hit-zone" onclick="runSession()"></button>
     </div>
 
-    <div id="screen-result" class="screen" style="justify-content: center;">
-        <div class="strip-wrapper">
-            <img src="photo strip frame.png" id="frame-img" alt="Frame">
-            <div class="photo-slots-container">
-                <div id="p1" class="captured-slot"></div>
-                <div id="p2" class="captured-slot"></div>
-                <div id="p3" class="captured-slot"></div>
-                <div id="p4" class="captured-slot"></div>
-            </div>
+    <div id="screen-result" class="screen">
+        <div class="results-overlay">
+            <div id="p1" class="photo-slot"></div>
+            <div id="p2" class="photo-slot"></div>
+            <div id="p3" class="photo-slot"></div>
+            <div id="p4" class="photo-slot"></div>
         </div>
         
-        <div style="display: flex; margin-top: 20px;">
-            <button class="btn-red" onclick="downloadStrip()">Download</button>
-            <button class="btn-red" style="background:#444;" onclick="location.reload()">Retry</button>
-        </div>
-
-        <a href="http://www.instagram.com/theredthread.app" target="_blank">
-            <img src="instagream link button.png" class="social-icon" alt="Instagram">
-        </a>
+        <a href="http://www.instagram.com/theredthread.app" target="_blank" id="instagram-hit" class="hit-zone"></a>
+        
+        <button id="download-hit" class="hit-zone" onclick="exportStrip()"></button>
+        
+        <button style="position:absolute; top: 2%; right: 5%;" onclick="location.reload()">RETRY</button>
     </div>
 
-    <canvas id="hidden-canvas" style="display:none;"></canvas>
+    <canvas id="main-canvas" style="display:none;"></canvas>
 
     <script>
         const video = document.getElementById('video');
         const timer = document.getElementById('timer');
+        const flash = document.getElementById('flash');
         let snaps = [];
 
         async function initCamera() {
@@ -157,23 +145,24 @@
                 video.srcObject = stream;
                 document.getElementById('screen-start').classList.remove('active');
                 document.getElementById('screen-capture').classList.add('active');
-            } catch (err) { alert("Camera access required."); }
+            } catch (err) { alert("Camera access denied."); }
         }
 
-        async function runBooth() {
-            document.getElementById('start-btn').style.display = 'none';
+        async function runSession() {
+            document.getElementById('start-session-btn').style.pointerEvents = 'none';
             snaps = [];
             for (let i = 1; i <= 4; i++) {
-                await doCountdown(3);
-                captureSnap(i);
+                await countdown(3);
+                triggerFlash();
+                capture(i);
             }
             document.getElementById('screen-capture').classList.remove('active');
             document.getElementById('screen-result').classList.add('active');
         }
 
-        function doCountdown(sec) {
+        function countdown(s) {
             return new Promise(res => {
-                let count = sec;
+                let count = s;
                 timer.innerText = count;
                 const interval = setInterval(() => {
                     count--;
@@ -183,14 +172,19 @@
             });
         }
 
-        function captureSnap(index) {
-            const canvas = document.getElementById('hidden-canvas');
+        function triggerFlash() {
+            flash.style.display = 'block';
+            setTimeout(() => flash.style.display = 'none', 100);
+        }
+
+        function capture(index) {
+            const canvas = document.getElementById('main-canvas');
             const ctx = canvas.getContext('2d');
             canvas.width = 600; canvas.height = 800;
             
-            ctx.filter = "contrast(1.1) brightness(1.1)";
             ctx.translate(canvas.width, 0);
             ctx.scale(-1, 1);
+            ctx.filter = "contrast(1.1) brightness(1.1)";
             
             const scale = canvas.height / video.videoHeight;
             const xOffset = (video.videoWidth * scale - canvas.width) / 2;
@@ -202,33 +196,30 @@
             ctx.setTransform(1, 0, 0, 1, 0, 0);
         }
 
-        async function downloadStrip() {
+        async function exportStrip() {
             const exportCanvas = document.createElement('canvas');
             const ctx = exportCanvas.getContext('2d');
-            
-            // High Res Dimensions based on the frame asset
             exportCanvas.width = 600; exportCanvas.height = 1800;
 
-            // 1. Draw Photos First (Background Layer)
+            // Use the "photo strip frame.png" for the export
+            const frame = new Image();
+            frame.src = 'photo strip frame.png';
+            
             for (let i = 0; i < 4; i++) {
                 const img = new Image();
                 img.src = snaps[i];
                 await img.decode();
-                // Vertical alignment matching the frames boxes
-                ctx.drawImage(img, 60, 80 + (i * 420), 480, 340);
+                ctx.drawImage(img, 75, 95 + (i * 415), 450, 335);
             }
 
-            // 2. Overlay the Frame (Top Layer)
-            const frame = new Image();
-            frame.src = 'photo strip frame.png';
             try {
                 await frame.decode();
-                ctx.drawImage(frame, 0, 0, exportCanvas.width, exportCanvas.height);
+                ctx.drawImage(frame, 0, 0, 600, 1800);
             } catch(e) {}
 
             const link = document.createElement('a');
             link.download = 'red-thread-strip.png';
-            link.href = exportCanvas.toDataURL('image/png', 1.0);
+            link.href = exportCanvas.toDataURL();
             link.click();
         }
     </script>
