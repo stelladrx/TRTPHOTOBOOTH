@@ -15,15 +15,13 @@
             overflow: hidden;
         }
 
-        /* This container forces the phone aspect ratio to stop stretching */
+        /* Fixed container to prevent stretching */
         .app-container {
             position: relative;
             width: 430px; 
             height: 932px; 
-            background-color: #ffffff;
+            background-color: #f2e1e1;
             overflow: hidden;
-            display: flex;
-            flex-direction: column;
         }
 
         .screen {
@@ -35,27 +33,26 @@
         
         .active { display: block !important; }
 
-        /* The Background Layer */
         .bg-layer {
             position: absolute;
             width: 100%;
             height: 100%;
-            object-fit: contain; /* Keeps your drawing from stretching */
+            object-fit: contain; 
             z-index: 2;
         }
 
-        /* CAMERA: Centered in your red box drawing */
+        /* CAMERA: Centered in your red box illustration */
         .camera-viewport {
             position: absolute;
-            top: 15.3%; /* Adjusted based on your photo screen.jpg */
+            top: 15.5%; 
             left: 50%;
             transform: translateX(-50%);
-            width: 280px; 
-            height: 380px;
+            width: 285px; 
+            height: 385px;
             overflow: hidden;
             background: #222;
             z-index: 10;
-            border: 2px solid var(--booth-red);
+            /* Optional: border removed to blend with your drawing */
         }
 
         video {
@@ -69,20 +66,22 @@
             position: absolute;
             cursor: pointer;
             z-index: 100;
-            background: rgba(255, 0, 0, 0); /* Set to 0.3 to see where to click */
+            background: rgba(255, 0, 0, 0); /* Set to 0.3 for alignment testing */
         }
 
-        /* Screen 1: ENTER */
+        /* Home Screen ENTER */
         #enter-btn { 
-            bottom: 60px; left: 50%; 
+            bottom: 8%; left: 50%; 
             transform: translateX(-50%); 
-            width: 250px; height: 100px; 
+            width: 200px; height: 80px; 
         }
 
-        /* Screen 2: RED CIRCLE START */
+        /* Capture Screen RED START BUTTON (aligned to your blue circle note) */
         #start-round-btn { 
-            top: 61.5%; right: 18%; 
-            width: 80px; height: 80px; 
+            top: 61%; 
+            right: 17%; 
+            width: 85px; 
+            height: 85px; 
             border-radius: 50%; 
         }
 
@@ -90,7 +89,7 @@
             position: absolute; top: 50%; left: 50%;
             transform: translate(-50%, -50%);
             font-size: 8rem; color: white; font-weight: bold;
-            z-index: 20; text-shadow: 0 0 20px black;
+            z-index: 20; text-shadow: 0 0 20px rgba(0,0,0,0.7);
         }
 
         .flash { position: fixed; inset: 0; background: white; z-index: 2000; display: none; }
@@ -103,12 +102,12 @@
     <div class="app-container">
         
         <div id="screen-start" class="screen active">
-            <img src="open scren.png" class="bg-layer" onerror="this.style.background='red'; alert('Missing: open scren.png')">
+            <img src="open scren.png" class="bg-layer">
             <div id="enter-btn" class="hit-zone" onclick="initCamera()"></div>
         </div>
 
         <div id="screen-capture" class="screen">
-            <img src="photo screen.jpg" class="bg-layer" onerror="this.style.background='red'; alert('Missing: photo screen.jpg')">
+            <img src="photo screen.png" class="bg-layer">
             <div class="camera-viewport">
                 <div id="timer"></div>
                 <video id="video" autoplay playsinline></video>
@@ -131,7 +130,7 @@
                 document.getElementById('screen-start').classList.remove('active');
                 document.getElementById('screen-capture').classList.add('active');
             } catch (err) {
-                alert("Please check: 1. You are on HTTPS. 2. Camera permission is allowed.");
+                alert("Camera access denied. Please use HTTPS.");
             }
         }
 
