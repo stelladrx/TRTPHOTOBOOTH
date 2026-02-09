@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -8,83 +7,85 @@
     <style>
         :root { --booth-red: #b31d1d; }
 
-        /* 1. RESET AND HIDE OVERFLOW */
         body, html {
             margin: 0; padding: 0;
-            height: 100vh; width: 100vw;
+            height: 100%; width: 100%;
             background-color: #f2e1e1;
             display: flex; justify-content: center; align-items: center;
             overflow: hidden;
+            font-family: sans-serif;
         }
 
-        /* 2. BACKGROUND STYLING (The "Fix") */
-        .screen { 
-            display: none; 
+        /* This container mimics a phone screen to keep everything aligned */
+        .main-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            max-width: 500px; /* Adjust this to match your target phone width */
+            aspect-ratio: 9/19.5; /* Modern phone ratio */
+            background-color: #fff;
+            overflow: hidden;
+        }
+
+        .screen {
+            display: none;
             position: absolute;
-            top: 0; left: 0;
-            width: 100%; height: 100%; 
-            background-size: contain; /* Shows whole image without cropping */
-            background-position: center center;
+            width: 100%; height: 100%;
+            background-size: 100% 100%; /* Forces image to fill the container exactly */
+            background-position: center;
             background-repeat: no-repeat;
-            background-color: #f2e1e1; /* Fallback color */
         }
         
-        /* Show screen when active */
-        .active { display: block !important; }
+        .active { display: block; }
 
-        /* Assigning Backgrounds - Ensure these names match your files exactly */
-        #screen-start { background-image: url('open scren.png'); }
-        #screen-capture { background-image: url('photo screen.jpg'); }
-        #screen-result { background-image: url('strip screen.jpg'); }
+        /* Background Assets - Double check these filenames in your folder! */
+        #screen-start { background-image: url('open%20scren.png'); }
+        #screen-capture { background-image: url('photo%20screen.jpg'); }
+        #screen-result { background-image: url('strip%20screen.jpg'); }
 
-        /* 3. PHOTO RATIO: L 654,5307px X H 913,1924px */
-        .camera-container {
+        /* CAMERA FIX: Precise Ratio & Positioning */
+        .camera-viewport {
             position: absolute;
-            top: 13.5%; 
+            top: 14%; /* Adjusted to match your red frame */
             left: 50%;
-            transform: translateX(-50%); /* Centers the camera horizontally */
-            width: 654.53px; 
-            height: 913.19px;
+            transform: translateX(-50%);
+            width: 68%; /* Matches the frame width in your design */
+            height: 38%; /* Matches the frame height in your design */
             overflow: hidden;
             background: #000;
-            z-index: 10; /* Keeps camera ABOVE background */
-            border: 2px solid transparent; /* Helps define the edge */
+            border: 2px solid var(--booth-red);
+            z-index: 5;
         }
 
         video {
             width: 100%; height: 100%;
-            object-fit: cover;
-            transform: scaleX(-1); /* Mirror effect */
+            object-fit: cover; /* Prevents stretching */
+            transform: scaleX(-1);
         }
 
         #timer {
             position: absolute; top: 50%; left: 50%;
             transform: translate(-50%, -50%);
-            font-size: 10rem; color: white; font-weight: bold;
-            z-index: 20;
-            pointer-events: none;
-            text-shadow: 0 0 20px rgba(0,0,0,0.5);
+            font-size: 6rem; color: white; font-weight: bold;
+            z-index: 10; text-shadow: 0 0 15px rgba(0,0,0,0.5);
         }
 
-        /* 4. BUTTON HIT ZONES */
+        /* THE BUTTON HIT ZONES */
         .hit-zone {
             position: absolute;
             cursor: pointer;
             z-index: 100;
-            background: rgba(255, 0, 0, 0); /* Change to 0.3 for testing positions */
+            background: rgba(255, 0, 0, 0); /* Set to 0.2 to see them for testing */
         }
 
-        /* Start screen ENTER button */
-        #enter-btn { 
-            bottom: 5%; left: 50%;
-            transform: translateX(-50%);
-            width: 250px; height: 100px; 
-        }
+        #enter-btn { bottom: 5%; left: 10%; width: 80%; height: 12%; }
 
-        /* Capture screen RED START button */
+        /* RED START BUTTON: Fixed to the right-side control panel */
         #start-round-btn {
-            bottom: 22%; right: 18%;
-            width: 120px; height: 120px;
+            top: 61.5%;
+            right: 17%;
+            width: 70px;
+            height: 70px;
             border-radius: 50%;
         }
 
@@ -95,41 +96,50 @@
 
     <div id="flash" class="flash"></div>
 
-    <div id="screen-start" class="screen active">
-        <div id="enter-btn" class="hit-zone" onclick="initCamera()"></div>
-    </div>
-
-    <div id="screen-capture" class="screen">
-        <div class="camera-container">
-            <div id="timer"></div>
-            <video id="video" autoplay playsinline></video>
+    <div class="main-container">
+        <div id="screen-start" class="screen active">
+            <div id="enter-btn" class="hit-zone" onclick="initCamera()"></div>
         </div>
-        <div id="start-round-btn" class="hit-zone" onclick="runSession()"></div>
+
+        <div id="screen-capture" class="screen">
+            <div class="camera-viewport">
+                <div id="timer"></div>
+                <video id="video" autoplay playsinline></video>
+            </div>
+            <div id="start-round-btn" class="hit-zone" onclick="startBooth()"></div>
+        </div>
     </div>
 
     <script>
         const video = document.getElementById('video');
         const timer = document.getElementById('timer');
-        const flash = document.getElementById('flash');
 
         async function initCamera() {
             try {
-                const stream = await navigator.mediaDevices.getUserMedia({ 
-                    video: { facingMode: 'user' } 
-                });
+                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
                 video.srcObject = stream;
-                
-                // Switch screens
                 document.getElementById('screen-start').classList.remove('active');
                 document.getElementById('screen-capture').classList.add('active');
             } catch (err) {
-                alert("Camera access failed. Ensure you use HTTPS.");
+                alert("Please allow camera access and use HTTPS.");
             }
         }
 
-        async function runSession() {
-            // Your countdown and capture logic
-            console.log("Session started via Red Button");
+        function startBooth() {
+            let count = 3;
+            timer.innerText = count;
+            const interval = setInterval(() => {
+                count--;
+                if (count === 0) {
+                    clearInterval(interval);
+                    timer.innerText = "";
+                    // Flash and Capture logic goes here
+                    document.getElementById('flash').style.display = 'block';
+                    setTimeout(() => { document.getElementById('flash').style.display = 'none'; }, 100);
+                } else {
+                    timer.innerText = count;
+                }
+            }, 1000);
         }
     </script>
 </body>
