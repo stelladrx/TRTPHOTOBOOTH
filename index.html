@@ -13,7 +13,6 @@
             background-color: #f2e1e1;
             display: flex; justify-content: center; align-items: center;
             overflow: hidden;
-            font-family: 'Helvetica', sans-serif;
         }
 
         .app-container {
@@ -40,14 +39,14 @@
             z-index: 2;
         }
 
-        /* PHOTO SIZE FIX: Scaled to fit perfectly inside the red frame */
+        /* CAPTURE FRAME POSITIONing */
         .camera-viewport {
             position: absolute;
-            top: 13.5%; 
+            top: 15.6%; 
             left: 50%;
             transform: translateX(-50%);
-            width: 285px; /* Adjusted size based on your frame */
-            height: 395px;
+            width: 255px; /* Scaled to fit perfectly inside your png frame */
+            height: 350px;
             overflow: hidden;
             background: #222;
             z-index: 10;
@@ -55,31 +54,29 @@
 
         video {
             width: 100%; height: 100%;
-            object-fit: cover;
+            object-fit: cover; /* Prevents stretching of the face */
             transform: scaleX(-1);
         }
 
-        /* STRIP PAGE LAYOUT */
-        .strip-display {
+        /* STRIP PAGE LAYOUT - Matches "strip screen.png" */
+        .strip-overlay-container {
             position: absolute;
-            top: 5.5%;
+            top: 5.8%;
             left: 50%;
             transform: translateX(-50%);
-            width: 155px; /* Matches width of white strip in background */
-            height: 700px;
+            width: 135px; /* Matches the white strip width */
             z-index: 10;
             display: flex;
             flex-direction: column;
-            justify-content: flex-start;
-            padding-top: 12px;
+            align-items: center;
         }
 
         .strip-photo {
-            width: 135px;
-            height: 110px;
-            margin: 0 auto 38px auto; /* Spacing to hit the boxes */
+            width: 110px;
+            height: 145px;
+            margin-bottom: 23px; /* Spacing to align with the frame boxes */
             object-fit: cover;
-            background: #eee;
+            background: #fff;
         }
 
         /* BUTTON HIT ZONES */
@@ -87,21 +84,22 @@
             position: absolute;
             cursor: pointer;
             z-index: 100;
-            background: rgba(255, 0, 0, 0);
         }
 
         #enter-btn { bottom: 8%; left: 50%; transform: translateX(-50%); width: 200px; height: 80px; }
-        #start-round-btn { top: 61%; right: 17%; width: 85px; height: 85px; border-radius: 50%; }
         
-        /* Result Screen Buttons */
-        #ig-btn { bottom: 25.5%; left: 23%; width: 50px; height: 50px; }
-        #download-btn { bottom: 9.5%; left: 50%; transform: translateX(-50%); width: 310px; height: 75px; }
+        /* The Red Circle Button */
+        #start-round-btn { top: 61.5%; right: 17%; width: 85px; height: 85px; border-radius: 50%; }
+
+        /* Final Page Buttons */
+        #ig-link { bottom: 25.5%; left: 24%; width: 50px; height: 50px; }
+        #dl-final { bottom: 9.5%; left: 50%; transform: translateX(-50%); width: 280px; height: 75px; }
 
         #timer {
             position: absolute; top: 50%; left: 50%;
             transform: translate(-50%, -50%);
             font-size: 8rem; color: white; font-weight: bold;
-            z-index: 20; text-shadow: 0 0 20px rgba(0,0,0,0.8);
+            z-index: 20; text-shadow: 0 0 20px black;
         }
 
         .flash { position: fixed; inset: 0; background: white; z-index: 2000; display: none; }
@@ -124,15 +122,17 @@
                 <div id="timer"></div>
                 <video id="video" autoplay playsinline></video>
             </div>
-            <div id="start-round-btn" class="hit-zone" onclick="startPhotoSequence()"></div>
+            <div id="start-round-btn" class="hit-zone" onclick="startBoothSession()"></div>
         </div>
 
         <div id="screen-result" class="screen">
-            <img src="strip screen.jpg" class="bg-layer">
-            <div class="strip-display" id="final-strip">
-                </div>
-            <div id="ig-btn" class="hit-zone" onclick="window.open('https://instagram.com/theredthread.app')"></div>
-            <div id="download-btn" class="hit-zone" onclick="generateStripFile()"></div>
+            <img src="strip screen.png" class="bg-layer">
+            
+            <div class="strip-overlay-container" id="final-strip-area"></div>
+
+            <div id="ig-link" class="hit-zone" onclick="window.open('https://instagram.com/theredthread.app')"></div>
+            
+            <div id="dl-final" class="hit-zone" onclick="saveFullStrip()"></div>
         </div>
 
     </div>
@@ -143,42 +143,44 @@
         const video = document.getElementById('video');
         const timer = document.getElementById('timer');
         const flash = document.getElementById('flash');
-        let photos = [];
+        let sessionPhotos = [];
 
         async function initCamera() {
             try {
-                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { facingMode: 'user', width: 1280, height: 720 } 
+                });
                 video.srcObject = stream;
                 document.getElementById('screen-start').classList.remove('active');
                 document.getElementById('screen-capture').classList.add('active');
             } catch (err) {
-                alert("Please enable camera access.");
+                alert("Please use HTTPS and allow camera permissions.");
             }
         }
 
-        async function startPhotoSequence() {
+        async function startBoothSession() {
             document.getElementById('start-round-btn').style.pointerEvents = 'none';
-            photos = [];
+            sessionPhotos = [];
             
             for (let i = 0; i < 4; i++) {
-                await countdown(3);
-                capturePhoto();
+                await runCountdown(3);
+                captureFrame();
             }
 
-            // Move to result screen
+            // Move to final screen
             document.getElementById('screen-capture').classList.remove('active');
             document.getElementById('screen-result').classList.add('active');
-            displayStrip();
+            renderStrip();
         }
 
-        function countdown(sec) {
+        function runCountdown(sec) {
             return new Promise(resolve => {
                 let timeLeft = sec;
                 timer.innerText = timeLeft;
-                const clock = setInterval(() => {
+                const interval = setInterval(() => {
                     timeLeft--;
                     if (timeLeft <= 0) {
-                        clearInterval(clock);
+                        clearInterval(interval);
                         timer.innerText = "";
                         resolve();
                     } else {
@@ -188,31 +190,34 @@
             });
         }
 
-        function capturePhoto() {
+        function captureFrame() {
             // Flash Effect
             flash.style.display = 'block';
             setTimeout(() => flash.style.display = 'none', 100);
 
             const canvas = document.getElementById('hidden-canvas');
             const ctx = canvas.getContext('2d');
-            canvas.width = 654; canvas.height = 913; // High res ratio
+            // High res capture size
+            canvas.width = 800; canvas.height = 1000;
             
-            ctx.translate(canvas.width, 0); ctx.scale(-1, 1);
-            ctx.drawImage(video, 0, 0, 654, 913);
-            photos.push(canvas.toDataURL('image/png'));
+            // Mirror flip the capture
+            ctx.translate(canvas.width, 0);
+            ctx.scale(-1, 1);
+            ctx.drawImage(video, 0, 0, 800, 1000);
+            
+            sessionPhotos.push(canvas.toDataURL('image/png'));
         }
 
-        function displayStrip() {
-            const container = document.getElementById('final-strip');
-            container.innerHTML = photos.map(src => `<img src="${src}" class="strip-photo">`).join('');
+        function renderStrip() {
+            const container = document.getElementById('final-strip-area');
+            container.innerHTML = sessionPhotos.map(data => `<img src="${data}" class="strip-photo">`).join('');
         }
 
-        function generateStripFile() {
-            // Final logic to merge photos with the frame.png for download
-            alert("Preparing high-quality strip for download...");
+        function saveFullStrip() {
+            // Placeholder: Simply downloads the first photo as the "strip"
             const link = document.createElement('a');
-            link.download = 'TheRedThread_Strip.png';
-            link.href = photos[0]; // Placeholder for full composite
+            link.download = 'RedThread_Strip.png';
+            link.href = sessionPhotos[0];
             link.click();
         }
     </script>
