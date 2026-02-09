@@ -33,11 +33,11 @@
         }
         video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
 
-        /* STRIP PREVIEW */
+        /* STRIP PREVIEW - Pushed Right to make room for IG button on Left */
         .strip-preview-area {
             position: absolute; 
             top: 10%; 
-            left: 38%; /* Moved left to make room for the Instagram button */
+            left: 62%; 
             transform: translateX(-50%);
             width: 32%; 
             height: auto;
@@ -73,11 +73,11 @@
         #enter-btn { bottom: 6%; left: 50%; transform: translateX(-50%); width: 60%; height: 10%; }
         #start-btn { top: 58%; right: 14%; width: 22%; height: 12%; }
         
-        /* Tag Us Button - Now next to the strip */
-        #ig-btn { top: 35%; left: 78%; transform: translateX(-50%); width: 25%; height: 10%; }
+        /* Tag Us Button - Positioned to the LEFT of the strip */
+        #ig-btn { top: 35%; left: 22%; transform: translateX(-50%); width: 25%; height: 10%; }
         
-        /* Buttons moved higher */
         #dl-btn { bottom: 12%; left: 50%; transform: translateX(-50%); width: 80%; height: 7%; }
+        
         #retake-btn { 
             bottom: 6%; left: 50%; transform: translateX(-50%); 
             width: 50%; height: 4%; 
@@ -190,7 +190,6 @@
             const canvas = document.getElementById('hidden-canvas');
             const ctx = canvas.getContext('2d');
             
-            // Increased canvas height slightly to ensure NO overlap
             canvas.width = 1200;
             canvas.height = 3650; 
 
@@ -219,14 +218,13 @@
                 const trtSize = 360;
                 ctx.drawImage(trtLogo, (canvas.width/2)-(trtSize/2), 1500, trtSize, trtSize);
 
-                // TEXT LOGO Y-POSITION: Placed explicitly AFTER the 4th photo's bottom edge
-                // 4th photo ends at: 80 + (3 * 810) + 787 = 3300ish
                 const txtW = 950; const txtH = 200;
-                const textLogoY = 3350; // Guaranteed space after the photos
+                // Logo sits explicitly 50px below the end of the 4th photo
+                const textLogoY = 3350; 
                 ctx.drawImage(textLogo, (canvas.width/2)-(txtW/2), textLogoY, txtW, txtH);
 
                 const link = document.createElement('a');
-                link.download = 'RedThread_Strip.jpg';
+                link.download = 'TheRedThread_Strip.jpg';
                 link.href = canvas.toDataURL('image/jpeg', 1.0);
                 link.click();
             }
