@@ -13,78 +13,87 @@
             background-color: #f2e1e1;
             display: flex; justify-content: center; align-items: center;
             overflow: hidden;
-            font-family: sans-serif;
         }
 
-        /* Fixed container that forces the phone aspect ratio */
+        /* This container forces the phone aspect ratio to stop stretching */
         .app-container {
             position: relative;
-            width: 430px; /* iPhone Pro width */
-            height: 932px; /* iPhone Pro height */
-            background-color: #f2e1e1;
+            width: 430px; 
+            height: 932px; 
+            background-color: #ffffff;
             overflow: hidden;
+            display: flex;
+            flex-direction: column;
         }
 
         .screen {
             display: none;
             position: absolute;
-            width: 100%; height: 100%;
-            top: 0; left: 0;
+            inset: 0;
+            z-index: 1;
         }
         
         .active { display: block !important; }
 
-        /* Background Image as a Layer */
+        /* The Background Layer */
         .bg-layer {
             position: absolute;
             width: 100%;
             height: 100%;
-            top: 0; left: 0;
-            object-fit: fill;
-            z-index: 1;
+            object-fit: contain; /* Keeps your drawing from stretching */
+            z-index: 2;
         }
 
-        /* CAMERA FIX: Locked to your frame position */
-        .camera-box {
+        /* CAMERA: Centered in your red box drawing */
+        .camera-viewport {
             position: absolute;
-            top: 130px; /* Perfectly aligns with your red frame illustration */
+            top: 15.3%; /* Adjusted based on your photo screen.jpg */
             left: 50%;
             transform: translateX(-50%);
-            width: 300px; 
-            height: 420px;
+            width: 280px; 
+            height: 380px;
             overflow: hidden;
-            background: #000;
+            background: #222;
             z-index: 10;
+            border: 2px solid var(--booth-red);
         }
 
         video {
             width: 100%; height: 100%;
-            object-fit: cover; /* Prevents stretching of the face */
+            object-fit: cover;
             transform: scaleX(-1);
         }
 
-        /* BUTTONS (HIT ZONES) */
+        /* INVISIBLE BUTTONS */
         .hit-zone {
             position: absolute;
             cursor: pointer;
             z-index: 100;
-            background: rgba(255, 0, 0, 0); /* Set to 0.3 to see them for alignment */
+            background: rgba(255, 0, 0, 0); /* Set to 0.3 to see where to click */
         }
 
-        /* ENTER button position (Screen 1) */
-        #enter-btn { bottom: 60px; left: 50%; transform: translateX(-50%); width: 220px; height: 80px; }
+        /* Screen 1: ENTER */
+        #enter-btn { 
+            bottom: 60px; left: 50%; 
+            transform: translateX(-50%); 
+            width: 250px; height: 100px; 
+        }
 
-        /* RED START button position (Screen 2) */
-        #start-round-btn { top: 585px; right: 80px; width: 75px; height: 75px; border-radius: 50%; }
+        /* Screen 2: RED CIRCLE START */
+        #start-round-btn { 
+            top: 61.5%; right: 18%; 
+            width: 80px; height: 80px; 
+            border-radius: 50%; 
+        }
 
         #timer {
             position: absolute; top: 50%; left: 50%;
             transform: translate(-50%, -50%);
             font-size: 8rem; color: white; font-weight: bold;
-            z-index: 20; text-shadow: 0 0 20px rgba(0,0,0,0.8);
+            z-index: 20; text-shadow: 0 0 20px black;
         }
 
-        .flash { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 2000; display: none; }
+        .flash { position: fixed; inset: 0; background: white; z-index: 2000; display: none; }
     </style>
 </head>
 <body>
@@ -94,13 +103,13 @@
     <div class="app-container">
         
         <div id="screen-start" class="screen active">
-            <img src="open scren.png" class="bg-layer">
+            <img src="open scren.png" class="bg-layer" onerror="this.style.background='red'; alert('Missing: open scren.png')">
             <div id="enter-btn" class="hit-zone" onclick="initCamera()"></div>
         </div>
 
         <div id="screen-capture" class="screen">
-            <img src="photo screen.jpg" class="bg-layer">
-            <div class="camera-box">
+            <img src="photo screen.jpg" class="bg-layer" onerror="this.style.background='red'; alert('Missing: photo screen.jpg')">
+            <div class="camera-viewport">
                 <div id="timer"></div>
                 <video id="video" autoplay playsinline></video>
             </div>
@@ -112,18 +121,17 @@
     <script>
         const video = document.getElementById('video');
         const timer = document.getElementById('timer');
-        const flash = document.getElementById('flash');
 
         async function initCamera() {
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ 
-                    video: { facingMode: 'user', aspectRatio: 0.71 } 
+                    video: { facingMode: 'user' } 
                 });
                 video.srcObject = stream;
                 document.getElementById('screen-start').classList.remove('active');
                 document.getElementById('screen-capture').classList.add('active');
             } catch (err) {
-                alert("Please ensure you are using HTTPS and have granted camera permissions.");
+                alert("Please check: 1. You are on HTTPS. 2. Camera permission is allowed.");
             }
         }
 
@@ -135,8 +143,8 @@
                 if (count <= 0) {
                     clearInterval(clock);
                     timer.innerText = "";
-                    flash.style.display = 'block';
-                    setTimeout(() => flash.style.display = 'none', 100);
+                    document.getElementById('flash').style.display = 'block';
+                    setTimeout(() => { document.getElementById('flash').style.display = 'none'; }, 100);
                 } else {
                     timer.innerText = count;
                 }
