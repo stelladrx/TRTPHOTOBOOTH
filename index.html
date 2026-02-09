@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="viewport" content="height=device-height, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>The Red Thread Photobooth</title>
     <style>
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -13,13 +13,10 @@
             display: flex; justify-content: center; align-items: center;
         }
 
-        /* The scaling container: adjusts based on phone height */
         .app-container { 
             position: relative; 
-            width: 100vw; 
-            height: 100dvh; /* Dynamic viewport height to avoid browser bar overlap */
-            max-width: 414px; 
-            aspect-ratio: 9 / 19.5; /* Matches iPhone proportions */
+            height: 100dvh; 
+            aspect-ratio: 9 / 19.5; /* Keeps the phone-screen ratio */
             background-color: #f2e1e1; 
             overflow: hidden;
         }
@@ -35,18 +32,18 @@
         }
         video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
 
-        /* STRIP PREVIEW - EXACT MATCH TO DOWNLOAD */
+        /* STRIP PREVIEW - MATCHES DOWNLOAD PROPORTIONS */
         .strip-preview-area {
             position: absolute; top: 4.5%; left: 50%; transform: translateX(-50%);
             width: 32.5%; height: 75%; z-index: 5;
             background: white; 
             display: flex; flex-direction: column; align-items: center;
             box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            padding-top: 8px;
         }
         
         .preview-photos-container {
             width: 100%; display: flex; flex-direction: column; align-items: center;
-            padding-top: 8px;
         }
 
         .preview-img { 
@@ -59,19 +56,23 @@
         }
 
         .preview-text-logo { 
-            width: 85%; margin-top: auto; padding-bottom: 15px; z-index: 10;
+            width: 85%; margin-top: auto; padding-bottom: 15px; 
         }
 
         /* HIT ZONES */
-        .hitbox { position: absolute; z-index: 20; cursor: pointer; background: rgba(0,0,0,0); }
-        
+        .hitbox { position: absolute; z-index: 20; cursor: pointer; }
         #enter-btn { bottom: 6%; left: 50%; transform: translateX(-50%); width: 60%; height: 10%; }
-        #start-btn { top: 58%; right: 14%; width: 22%; height: 12%; border-radius: 50%; }
+        #start-btn { top: 58%; right: 14%; width: 22%; height: 12%; }
         #ig-btn { bottom: 22%; left: 9%; width: 25%; height: 8%; }
+        #dl-btn { bottom: 8.5%; left: 50%; transform: translateX(-50%); width: 80%; height: 7%; }
         
-        /* New stacked button positions */
-        #dl-btn { bottom: 8.5%; left: 50%; transform: translateX(-50%); width: 80%; height: 6.5%; }
-        #retake-btn { bottom: 2%; left: 50%; transform: translateX(-50%); width: 50%; height: 5%; text-align: center; color: #b31d1d; font-family: sans-serif; font-weight: bold; font-size: 0.9rem; padding-top: 5px; }
+        /* Retake Button */
+        #retake-btn { 
+            bottom: 2%; left: 50%; transform: translateX(-50%); 
+            width: 50%; height: 5%; 
+            display: flex; justify-content: center; align-items: center;
+            font-family: sans-serif; font-weight: bold; font-size: 12px; color: #b31d1d;
+        }
 
         #timer { 
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); 
@@ -107,10 +108,8 @@
                 <img src="TRT LOGO.png" class="preview-trt-logo">
                 <img src="text logo.png" class="preview-text-logo">
             </div>
-            
             <div id="ig-btn" class="hitbox" onclick="window.location.href='https://instagram.com/theredthread.app'"></div>
             <div id="dl-btn" class="hitbox" onclick="createFinalDownload()"></div>
-            
             <div id="retake-btn" class="hitbox" onclick="location.reload()">RETAKE PHOTOS</div>
         </div>
     </div>
@@ -123,14 +122,10 @@
         let capturedPhotos = [];
 
         async function startCamera() {
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ 
-                    video: { facingMode: 'user', aspectRatio: 1 } 
-                });
-                video.srcObject = stream;
-                document.getElementById('screen-1').classList.remove('active');
-                document.getElementById('screen-2').classList.add('active');
-            } catch (err) { alert("Camera error: Please use HTTPS."); }
+            const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
+            video.srcObject = stream;
+            document.getElementById('screen-1').classList.remove('active');
+            document.getElementById('screen-2').classList.add('active');
         }
 
         async function takeFourPhotos() {
@@ -156,17 +151,13 @@
         function snap() {
             document.getElementById('flash').style.display = 'block';
             setTimeout(() => document.getElementById('flash').style.display = 'none', 100);
-            
             const c = document.createElement('canvas');
             c.width = 1000; c.height = 750;
             const ctx = c.getContext('2d');
             ctx.translate(1000, 0); ctx.scale(-1, 1);
-            
-            // Apply grainy booth filter
-            ctx.filter = 'contrast(1.06) brightness(1.02)';
+            ctx.filter = 'contrast(1.05) brightness(1.02)';
             ctx.drawImage(video, 0, 0, 1000, 750);
-            
-            for (let i = 0; i < 6000; i++) {
+            for (let i = 0; i < 5000; i++) {
                 ctx.fillStyle = `rgba(255,255,255,${Math.random() * 0.03})`;
                 ctx.fillRect(Math.random() * 1000, Math.random() * 750, 1, 1);
             }
@@ -176,53 +167,36 @@
         function showResults() {
             document.getElementById('screen-2').classList.remove('active');
             document.getElementById('screen-3').classList.add('active');
-            const list = document.getElementById('photo-list');
-            list.innerHTML = capturedPhotos.map(p => `<img src="${p}" class="preview-img">`).join('');
+            document.getElementById('photo-list').innerHTML = capturedPhotos.map(p => `<img src="${p}" class="preview-img">`).join('');
         }
 
         function createFinalDownload() {
             const canvas = document.getElementById('hidden-canvas');
             const ctx = canvas.getContext('2d');
-            
-            // Proportional dimensions to match the preview exactly
-            canvas.width = 1200;
-            canvas.height = 3600; 
-
+            canvas.width = 1200; canvas.height = 3600; 
             ctx.fillStyle = "#ffffff";
             ctx.fillRect(0, 0, canvas.width, canvas.height);
-
             const trtLogo = new Image(); trtLogo.src = 'TRT LOGO.png';
             const textLogo = new Image(); textLogo.src = 'text logo.png';
-
             let loaded = 0;
             const imgs = capturedPhotos.map(src => {
-                const img = new Image();
-                img.src = src;
+                const img = new Image(); img.src = src;
                 img.onload = () => { loaded++; if(loaded === 4) build(); };
                 return img;
             });
-
             function build() {
-                const photoW = 1050;
-                const photoH = 787; // Matches 1000/750 ratio exactly
+                const photoW = 1050; const photoH = 787;
                 const x = (canvas.width - photoW) / 2;
-
                 imgs.forEach((img, i) => {
-                    // Vertical spacing math matches preview gaps
-                    const y = 80 + (i * 770); 
+                    const y = 80 + (i * 770);
                     ctx.drawImage(img, x, y, photoW, photoH);
                 });
-
-                // TRT LOGO centered over the middle gap
                 const trtSize = 340;
                 ctx.drawImage(trtLogo, (canvas.width/2)-(trtSize/2), 1460, trtSize, trtSize);
-
-                // Text Logo at the bottom
                 const txtW = 950; const txtH = 200;
                 ctx.drawImage(textLogo, (canvas.width/2)-(txtW/2), 3320, txtW, txtH);
-
                 const link = document.createElement('a');
-                link.download = 'TheRedThread_Strip.jpg';
+                link.download = 'RedThread_Strip.jpg';
                 link.href = canvas.toDataURL('image/jpeg', 1.0);
                 link.click();
             }
