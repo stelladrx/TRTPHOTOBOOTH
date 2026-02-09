@@ -26,13 +26,13 @@
         .active { display: block !important; }
         .bg-layer { position: absolute; width: 100%; height: 100%; object-fit: contain; z-index: 1; }
 
-        /* THE FIX: Absolute Floating Instagram Link precisely over the icon */
+        /* TAG US LINK - Positioned precisely over the Instagram icon */
         #ig-link {
             position: absolute;
-            top: 73.5%; /* Positioned exactly over the Instagram icon area */
-            left: 21%; 
-            width: 25%; 
-            height: 10%;
+            top: 67%; /* Adjusted to be right over the icon below 'TAG US' */
+            left: 20%; 
+            width: 15%; 
+            height: 8%;
             z-index: 9999 !important; 
             display: none; 
             cursor: pointer;
@@ -60,24 +60,24 @@
         }
         video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
 
-        /* REPOSITIONED HIT ZONES based on your sketch */
+        /* HIT ZONES */
         .hitbox { position: absolute; z-index: 40; cursor: pointer; }
         
         #enter-btn { bottom: 4%; left: 50%; transform: translateX(-50%); width: 70%; height: 15%; }
         #start-btn { top: 58%; right: 14%; width: 22%; height: 12%; }
         
-        /* Moved Download Up per your drawing */
+        /* DOWNLOAD Button Positioning */
         #dl-btn { 
-            bottom: 6%; 
+            bottom: 12%; 
             left: 50%; 
             transform: translateX(-50%); 
             width: 80%; 
-            height: 10%; 
+            height: 9%; 
         }
         
-        /* Retake at the absolute bottom */
+        /* RETAKE link at the bottom */
         #retake-btn { 
-            bottom: 2%; 
+            bottom: 7%; 
             left: 50%; 
             transform: translateX(-50%); 
             width: 50%; 
@@ -214,8 +214,7 @@
                 ctx.drawImage(trtLogo, (canvas.width/2)-180, 1500, 360, 360);
                 ctx.drawImage(textLogo, (canvas.width/2)-490, 3400, 980, 200);
 
-                const finalStripUrl = canvas.toDataURL('image/jpeg', 0.95);
-                document.getElementById('merged-preview-img').src = finalStripUrl;
+                document.getElementById('merged-preview-img').src = canvas.toDataURL('image/jpeg', 0.95);
                 
                 document.getElementById('screen-2').classList.remove('active');
                 document.getElementById('screen-3').classList.add('active');
