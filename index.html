@@ -10,46 +10,47 @@
         body, html {
             margin: 0; padding: 0;
             height: 100%; width: 100%;
-            font-family: 'Helvetica Neue', sans-serif;
             background-color: #f2e1e1;
-            overflow: hidden;
             display: flex; justify-content: center; align-items: center;
+            overflow: hidden;
         }
 
+        /* Fixed Background and Layout */
         .screen { 
             display: none; 
-            flex-direction: column; 
-            align-items: center; 
-            width: 100%; height: 100%; 
-            position: absolute; 
+            position: relative;
+            width: 100vw; 
+            height: 100vh; 
             background-size: contain;
             background-position: center;
             background-repeat: no-repeat;
+            z-index: 1;
         }
         
-        .active { display: flex; }
+        .active { display: flex; flex-direction: column; align-items: center; }
 
-        /* DESIGNATED ASSETS */
+        /* Assigning Background Images */
         #screen-start { background-image: url('open scren.png'); }
         #screen-capture { background-image: url('photo screen.jpg'); }
         #screen-result { background-image: url('strip screen.jpg'); }
 
-        /* CAMERA FIT ADJUSTMENT 
-           Aligned to the inner rectangle of the 'photo screen.jpg' template
-        */
+        /* PHOTO RATIO FIX: L 654,5307px X H 913,1924px */
         .camera-container {
             position: absolute;
-            top: 13.8%; /* Adjusted for precise fit */
-            width: 53.5%; 
-            height: 35.8%;
+            top: 13.8%; 
+            width: 654.53px; 
+            height: 913.19px;
+            /* Scaling for different screens while maintaining the exact ratio */
+            max-width: 53.5%; 
+            max-height: 35.8%;
             overflow: hidden;
-            z-index: 5;
             background: #000;
+            z-index: 5;
         }
 
         video {
-            height: 100%; width: 100%;
-            object-fit: cover; /* This forces the crop to match your frame ratio */
+            width: 100%; height: 100%;
+            object-fit: cover;
             transform: scaleX(-1);
         }
 
@@ -57,18 +58,16 @@
             position: absolute; top: 50%; left: 50%;
             transform: translate(-50%, -50%);
             font-size: 8rem; color: white; font-weight: bold;
-            text-shadow: 0 0 20px var(--booth-red);
             z-index: 10;
         }
 
-        /* STRIP RESULTS: Aligned to 'strip screen.jpg' template */
+        /* Results Display */
         .results-overlay {
             position: absolute;
             top: 4.5%;
             width: 31%; 
             height: 61.5%;
-            display: flex;
-            flex-direction: column;
+            display: flex; flex-direction: column;
             justify-content: space-between;
             padding: 12px 0;
             box-sizing: border-box;
@@ -78,7 +77,7 @@
         .photo-slot { width: 100%; height: 23%; overflow: hidden; }
         .photo-slot img { width: 100%; height: 100%; object-fit: cover; }
 
-        /* --- THE BUTTONS (HIT ZONES) --- */
+        /* BUTTONS (HIT ZONES) */
         .hit-zone {
             position: absolute;
             cursor: pointer;
@@ -86,19 +85,13 @@
             background: rgba(255, 0, 0, 0); 
         }
 
-        /* ENTER Button - Over 'enter button.png' asset area */
-        #enter-btn {
-            bottom: 6%;
-            width: 35%;
-            height: 12%;
-        }
+        #enter-btn { bottom: 6%; width: 35%; height: 12%; }
 
-        /* THE RED ROUND START BUTTON - Mapped to the illustration on 'photo screen.jpg' */
+        /* RED ROUND START BUTTON FIX */
         #start-round-btn {
-            top: 61%; /* Positioned over the red circle illustration */
+            top: 61%; 
             left: 65.5%;
-            width: 80px;
-            height: 80px;
+            width: 80px; height: 80px;
             border-radius: 50%;
         }
 
@@ -133,7 +126,7 @@
         </div>
         <div id="instagram-hit" class="hit-zone" onclick="window.open('http://www.instagram.com/theredthread.app')"></div>
         <div id="download-hit" class="hit-zone" onclick="exportStrip()"></div>
-        <button style="position:absolute; top: 2%; right: 2%; cursor:pointer;" onclick="location.reload()">RETRY</button>
+        <button style="position:absolute; top: 2%; right: 2%; z-index: 1000;" onclick="location.reload()">RETRY</button>
     </div>
 
     <canvas id="hidden-canvas" style="display:none;"></canvas>
@@ -151,8 +144,7 @@
                 document.getElementById('screen-start').classList.remove('active');
                 document.getElementById('screen-capture').classList.add('active');
             } catch (err) {
-                // This handles the error from your screenshot
-                alert("Camera Access Error: Ensure you are using HTTPS and have allowed camera permissions in your browser.");
+                alert("Camera Access Error: Ensure you are using HTTPS and have allowed permissions.");
             }
         }
 
@@ -188,10 +180,10 @@
         function snap(index) {
             const canvas = document.getElementById('hidden-canvas');
             const ctx = canvas.getContext('2d');
-            canvas.width = 600; canvas.height = 800; // Fixed ratio matching template slots
+            // Using your exact dimensions for the canvas capture
+            canvas.width = 654.53; canvas.height = 913.19;
             ctx.translate(canvas.width, 0); ctx.scale(-1, 1);
             
-            // Draw video frame - object-fit logic on canvas
             const scale = Math.max(canvas.width / video.videoWidth, canvas.height / video.videoHeight);
             const x = (canvas.width / 2) - (video.videoWidth / 2) * scale;
             const y = (canvas.height / 2) - (video.videoHeight / 2) * scale;
@@ -207,21 +199,16 @@
             const exp = document.createElement('canvas');
             const ctx = exp.getContext('2d');
             exp.width = 600; exp.height = 1800;
-            
             const frame = new Image();
             frame.src = 'photo strip frame.png';
-
             for (let i = 0; i < 4; i++) {
                 const img = new Image();
                 img.src = captured[i];
                 await img.decode();
-                // Match the strip frame internal boxes
                 ctx.drawImage(img, 72, 100 + (i * 418), 456, 332);
             }
-
             await frame.decode();
             ctx.drawImage(frame, 0, 0, 600, 1800);
-            
             const link = document.createElement('a');
             link.download = 'RedThreadStrip.png';
             link.href = exp.toDataURL();
