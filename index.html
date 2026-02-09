@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Red Thread Photobooth</title>
+    <title>The Red Thread • Photo Booth</title>
     <style>
         :root {
             --booth-red: #b31d1d;
@@ -14,83 +14,95 @@
             margin: 0; padding: 0;
             height: 100%; width: 100%;
             background-color: var(--soft-pink);
-            font-family: 'Helvetica Neue', Arial, sans-serif;
+            font-family: 'Helvetica Neue', sans-serif;
             overflow: hidden;
             display: flex; justify-content: center; align-items: center;
         }
 
-        /* Beautifying & Grainy Filter Effects */
-        .filter-container {
-            position: relative;
-            width: 100%;
-            height: 100%;
-            /* Photo booth style: High contrast, brightness boost, and slight softening */
-            filter: contrast(1.1) brightness(1.05) saturate(1.1) blur(0.3px);
+        /* 80s Grain & Beauty Filter */
+        .filter-applied {
+            filter: contrast(1.1) brightness(1.1) saturate(1.1) blur(0.2px);
         }
 
         .grain-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: url('https://www.transparenttextures.com/patterns/stardust.png');
-            opacity: 0.12; pointer-events: none; z-index: 100;
+            opacity: 0.15; pointer-events: none; z-index: 100;
         }
 
-        /* UI Screens */
         .screen { display: none; flex-direction: column; align-items: center; width: 100%; height: 100%; position: absolute; }
         .active { display: flex; }
 
-        /* Start Screen using your uploaded background */
+        /* Start Screen */
         #screen-start {
             background: url('photobooth with bg.jpg') no-repeat center center;
             background-size: contain;
             justify-content: flex-end;
-            padding-bottom: 50px;
+            padding-bottom: 80px;
         }
 
-        /* Camera Viewport */
-        .camera-box {
+        /* Capture UI */
+        #screen-capture {
+            background: url('set up screen with bg.jpg') no-repeat center center;
+            background-size: cover;
+        }
+
+        .camera-viewport {
             position: relative;
-            width: 320px;
-            height: 480px;
-            border: 10px solid var(--booth-red);
+            width: 300px; height: 400px;
+            border: 8px solid white;
             background: #000;
-            margin-top: 50px;
+            margin-top: 60px;
             overflow: hidden;
         }
 
-        video {
-            height: 100%; width: auto;
-            position: absolute; left: 50%;
-            transform: translateX(-50%) scaleX(-1);
-        }
+        video { height: 100%; width: auto; position: absolute; left: 50%; transform: translateX(-50%) scaleX(-1); }
 
         #timer {
             position: absolute; top: 50%; left: 50%;
             transform: translate(-50%, -50%);
             font-size: 8rem; color: white; font-weight: bold;
-            text-shadow: 0 0 20px rgba(179, 29, 29, 0.8);
+            text-shadow: 0 0 20px var(--booth-red);
             z-index: 10;
         }
 
-        /* Result Strip */
-        .strip {
-            background: white;
-            padding: 10px;
-            width: 160px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        /* Results Screen */
+        .strip-wrapper {
+            position: relative;
+            width: 160px; /* Scaled for preview */
+            height: 480px;
         }
 
-        .slot { width: 100%; height: 200px; background: #eee; margin-bottom: 8px; overflow: hidden; }
-        .slot img { width: 100%; height: 100%; object-fit: cover; }
+        #frame-img {
+            position: absolute; top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: 5; pointer-events: none;
+        }
 
-        .logo-sticker { width: 60px; margin: 5px auto; display: block; }
+        .photo-slots-container {
+            position: absolute; top: 0; left: 0;
+            width: 100%; height: 100%;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: space-evenly;
+            padding: 20px 0; box-sizing: border-box;
+        }
+
+        .captured-slot {
+            width: 85%; height: 18%; /* Fits inside the white boxes of the frame */
+            background: #eee; overflow: hidden;
+        }
+
+        .captured-slot img { width: 100%; height: 100%; object-fit: cover; }
 
         .btn-red {
             background: var(--booth-red);
             color: white; border: none;
-            padding: 15px 40px; border-radius: 5px;
+            padding: 12px 30px; border-radius: 4px;
             font-weight: bold; cursor: pointer;
-            text-transform: uppercase;
+            text-transform: uppercase; margin: 5px;
         }
+
+        .social-icon { margin-top: 15px; width: 50px; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -98,96 +110,126 @@
     <div class="grain-overlay"></div>
 
     <div id="screen-start" class="screen active">
-        <button class="btn-red" onclick="startBooth()">Enter Booth</button>
+        <button class="btn-red" onclick="initCamera()">Enter Booth</button>
     </div>
 
-    <div id="screen-capture" class="screen" style="background: url('set up screen with bg.jpg') no-repeat center center; background-size: cover;">
-        <div class="camera-box">
+    <div id="screen-capture" class="screen">
+        <div class="camera-viewport">
             <div id="timer"></div>
-            <div class="filter-container">
+            <div class="filter-applied">
                 <video id="video" autoplay playsinline></video>
             </div>
         </div>
-        <button id="snap-btn" class="btn-red" style="margin-top: 20px;" onclick="beginSession()">Start (3s Countdown)</button>
+        <button id="start-btn" class="btn-red" style="margin-top: 30px;" onclick="runBooth()">Start 3s Timer</button>
     </div>
 
-    <div id="screen-result" class="screen">
-        <div class="strip">
-            <div id="p1" class="slot"></div>
-            <div id="p2" class="slot"></div>
-            <img src="Artboard 1@3x.png" class="logo-sticker" alt="Logo">
-            <div id="p3" class="slot"></div>
-            <div id="p4" class="slot"></div>
+    <div id="screen-result" class="screen" style="justify-content: center;">
+        <div class="strip-wrapper">
+            <img src="photo strip frame.png" id="frame-img" alt="Frame">
+            <div class="photo-slots-container">
+                <div id="p1" class="captured-slot"></div>
+                <div id="p2" class="captured-slot"></div>
+                <div id="p3" class="captured-slot"></div>
+                <div id="p4" class="captured-slot"></div>
+            </div>
         </div>
-        <div style="margin-top: 20px;">
-            <button class="btn-red" onclick="location.reload()">Retry</button>
+        
+        <div style="display: flex; margin-top: 20px;">
+            <button class="btn-red" onclick="downloadStrip()">Download</button>
+            <button class="btn-red" style="background:#444;" onclick="location.reload()">Retry</button>
         </div>
+
+        <a href="http://www.instagram.com/theredthread.app" target="_blank">
+            <img src="instagream link button.png" class="social-icon" alt="Instagram">
+        </a>
     </div>
 
-    <canvas id="canvas" width="600" height="800" style="display:none;"></canvas>
+    <canvas id="hidden-canvas" style="display:none;"></canvas>
 
     <script>
         const video = document.getElementById('video');
         const timer = document.getElementById('timer');
-        let captured = [];
+        let snaps = [];
 
-        async function startBooth() {
+        async function initCamera() {
             try {
-                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 1280, height: 720 } });
                 video.srcObject = stream;
                 document.getElementById('screen-start').classList.remove('active');
                 document.getElementById('screen-capture').classList.add('active');
-            } catch (err) { alert("Camera access denied."); }
+            } catch (err) { alert("Camera access required."); }
         }
 
-        async function beginSession() {
-            document.getElementById('snap-btn').style.display = 'none';
-            captured = [];
-            
+        async function runBooth() {
+            document.getElementById('start-btn').style.display = 'none';
+            snaps = [];
             for (let i = 1; i <= 4; i++) {
-                await countdown(3);
-                takePhoto(i);
+                await doCountdown(3);
+                captureSnap(i);
             }
-
             document.getElementById('screen-capture').classList.remove('active');
             document.getElementById('screen-result').classList.add('active');
         }
 
-        function countdown(sec) {
-            return new Promise(resolve => {
-                let time = sec;
-                timer.innerText = time;
-                const clock = setInterval(() => {
-                    time--;
-                    if (time === 0) {
-                        clearInterval(clock);
-                        timer.innerText = "";
-                        resolve();
-                    } else {
-                        timer.innerText = time;
-                    }
+        function doCountdown(sec) {
+            return new Promise(res => {
+                let count = sec;
+                timer.innerText = count;
+                const interval = setInterval(() => {
+                    count--;
+                    if (count <= 0) { clearInterval(interval); timer.innerText = ""; res(); }
+                    else { timer.innerText = count; }
                 }, 1000);
             });
         }
 
-        function takePhoto(index) {
-            const canvas = document.getElementById('canvas');
+        function captureSnap(index) {
+            const canvas = document.getElementById('hidden-canvas');
             const ctx = canvas.getContext('2d');
+            canvas.width = 600; canvas.height = 800;
             
-            // Apply beautifying contrast/brightness to the canvas capture
-            ctx.filter = "contrast(1.1) brightness(1.05)";
-            
-            // Mirror and draw center-cropped portrait
+            ctx.filter = "contrast(1.1) brightness(1.1)";
             ctx.translate(canvas.width, 0);
             ctx.scale(-1, 1);
-            ctx.drawImage(video, 0, 0, video.videoWidth, video.videoHeight, -100, 0, 800, 800);
+            
+            const scale = canvas.height / video.videoHeight;
+            const xOffset = (video.videoWidth * scale - canvas.width) / 2;
+            ctx.drawImage(video, -xOffset, 0, video.videoWidth * scale, canvas.height);
             
             const data = canvas.toDataURL('image/png');
-            captured.push(data);
+            snaps.push(data);
             document.getElementById('p' + index).innerHTML = `<img src="${data}">`;
-            
-            // Reset transformation for next photo
             ctx.setTransform(1, 0, 0, 1, 0, 0);
+        }
+
+        async function downloadStrip() {
+            const exportCanvas = document.createElement('canvas');
+            const ctx = exportCanvas.getContext('2d');
+            
+            // High Res Dimensions based on the frame asset
+            exportCanvas.width = 600; exportCanvas.height = 1800;
+
+            // 1. Draw Photos First (Background Layer)
+            for (let i = 0; i < 4; i++) {
+                const img = new Image();
+                img.src = snaps[i];
+                await img.decode();
+                // Vertical alignment matching the frames boxes
+                ctx.drawImage(img, 60, 80 + (i * 420), 480, 340);
+            }
+
+            // 2. Overlay the Frame (Top Layer)
+            const frame = new Image();
+            frame.src = 'photo strip frame.png';
+            try {
+                await frame.decode();
+                ctx.drawImage(frame, 0, 0, exportCanvas.width, exportCanvas.height);
+            } catch(e) {}
+
+            const link = document.createElement('a');
+            link.download = 'red-thread-strip.png';
+            link.href = exportCanvas.toDataURL('image/png', 1.0);
+            link.click();
         }
     </script>
 </body>
